@@ -1,0 +1,26 @@
+# UI Framework
+PyQt5>=5.15.0
+
+# Video & Image Processing
+opencv-python>=4.5.0
+numpy>=1.21.0
+Pillow>=9.0.0
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# YOLOv7 dependencies
+matplotlib>=3.2.2
+scipy>=1.4.1
+tqdm>=4.41.0
+PyYAML>=5.3.1
+requests>=2.23.0
+pandas>=1.1.4
+seaborn>=0.11.0
+
+# SAM (Segment Anything Model)
+git+https://github.com/facebookresearch/segment-anything.git
+
+# Excel Export
+openpyxl>=3.0.0

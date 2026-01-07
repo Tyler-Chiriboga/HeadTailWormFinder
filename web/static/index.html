@@ -1,0 +1,3038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worm Annotation Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #16213e;
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 1px solid #0f3460;
+        }
+        
+        .sidebar h2 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .sidebar h3 {
+            color: #aaa;
+            font-size: 14px;
+            margin: 15px 0 10px;
+            text-transform: uppercase;
+        }
+        
+        /* User info */
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .user-info .user-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .user-info .user-role {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        .user-info .logout-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            background: transparent;
+            border: 1px solid #e94560;
+            color: #e94560;
+        }
+        
+        .user-info .logout-btn:hover {
+            background: #e94560;
+            color: white;
+        }
+        
+        /* Main area */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Toolbar */
+        .toolbar {
+            background: #16213e;
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-bottom: 1px solid #0f3460;
+        }
+        
+        .toolbar-group {
+            display: flex;
+            gap: 5px;
+            padding: 0 10px;
+            border-right: 1px solid #0f3460;
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+        
+        /* Buttons */
+        button {
+            background: #0f3460;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #e94560;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        button.active {
+            background: #e94560;
+        }
+        
+        button.primary {
+            background: #e94560;
+        }
+        
+        button.primary:hover {
+            background: #ff6b6b;
+        }
+        
+        /* Canvas area */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #canvas-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        #frame-canvas {
+            display: block;
+            /* Remove max-width/max-height to prevent CSS scaling mismatch */
+        }
+        
+        #annotation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: auto;
+        }
+        
+        /* Video list */
+        .video-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .video-list li {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .video-list li:hover {
+            background: #0f3460;
+        }
+        
+        .video-list li.active {
+            background: #e94560;
+        }
+        
+        /* Annotation tree */
+        .annotation-tree {
+            list-style: none;
+        }
+        
+        .worm-item {
+            margin-bottom: 5px;
+        }
+        
+        .worm-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #0f3460;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .worm-header:hover {
+            background: #1a4a7a;
+        }
+        
+        .worm-header.selected {
+            background: #e94560;
+        }
+        
+        .worm-header.censored {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+        
+        .worm-header.censored.selected {
+            background: #4a9eff;
+        }
+        
+        .worm-children {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+        
+        .box-item {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+            cursor: pointer;
+        }
+        
+        .box-item:hover {
+            background: #1a4a7a;
+        }
+        
+        .box-item.detection { border-left: 3px solid #0078ff; }
+        .box-item.head { border-left: 3px solid #00ff00; }
+        .box-item.tail { border-left: 3px solid #ff0000; }
+        .box-item.mask { border-left: 3px solid #ffff00; }
+        
+        /* Status bar */
+        .statusbar {
+            background: #0f3460;
+            padding: 8px 15px;
+            font-size: 12px;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 400px;
+        }
+        
+        .modal-content h3 {
+            margin-bottom: 15px;
+            color: #e94560;
+        }
+        
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            background: #0f3460;
+            border: 1px solid #1a4a7a;
+            color: #fff;
+            border-radius: 4px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        /* Loading overlay */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .loading.show {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top-color: #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Zoom controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 5px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px;
+            border-radius: 5px;
+        }
+        
+        .zoom-controls button {
+            width: 35px;
+            height: 35px;
+            padding: 0;
+            font-size: 18px;
+        }
+        
+        #zoom-level {
+            color: #fff;
+            padding: 0 10px;
+            line-height: 35px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>🪱 Worm Annotator</h2>
+            
+            <!-- User info -->
+            <div class="user-info">
+                <div>
+                    <div class="user-name">👤 <span id="user-name">Loading...</span></div>
+                    <div class="user-role" id="user-role"></div>
+                </div>
+                <button class="logout-btn" id="logout-btn">Logout</button>
+            </div>
+            
+            <button id="open-folder-btn" class="primary" style="width: 100%; margin-bottom: 10px;">
+                📁 Open Folder
+            </button>
+            
+            <!-- Current Folder Display -->
+            <div id="current-folder" style="background: #0f3460; border-radius: 5px; padding: 8px; margin-bottom: 15px; font-size: 11px; word-break: break-all; display: none;">
+                <span style="color: #888;">📂 Folder:</span><br>
+                <span id="current-folder-path" style="color: #4ecca3;">-</span>
+            </div>
+            
+            <h3>Videos</h3>
+            <ul class="video-list" id="video-list">
+                <li style="color: #666;">No folder loaded</li>
+            </ul>
+            
+            <h3>Annotations</h3>
+            <ul class="annotation-tree" id="annotation-tree">
+                <li style="color: #666; padding: 10px;">No annotations</li>
+            </ul>
+            
+            <!-- Show/Hide Controls -->
+            <h3>Visibility</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;">
+                <button id="show-detections" class="active" style="font-size: 11px; padding: 5px 8px;" title="Toggle Detection Boxes">📦 Detect</button>
+                <button id="show-heads" class="active" style="font-size: 11px; padding: 5px 8px;" title="Toggle Head Boxes">🟢 Heads</button>
+                <button id="show-tails" class="active" style="font-size: 11px; padding: 5px 8px;" title="Toggle Tail Boxes">🔴 Tails</button>
+                <button id="show-masks" class="active" style="font-size: 11px; padding: 5px 8px;" title="Toggle Segmentation Masks">🎭 Masks</button>
+            </div>
+            <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+                <button id="show-all-btn" style="flex: 1; font-size: 11px;">Show All</button>
+                <button id="show-selected-btn" style="flex: 1; font-size: 11px;">Selected Only</button>
+            </div>
+            
+            <!-- Statistics -->
+            <h3>Statistics</h3>
+            <div id="stats-panel" style="background: #0f3460; border-radius: 5px; padding: 10px; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Total Worms:</span>
+                    <span id="stats-total">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Complete (H+T):</span>
+                    <span id="stats-complete" style="color: #00ff00;">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>With Masks:</span>
+                    <span id="stats-masks" style="color: #ffff00;">0</span>
+                </div>
+                
+                <!-- Selected worm stats -->
+                <div id="selected-worm-stats" style="border-top: 1px solid #1a1a2e; padding-top: 8px; margin-top: 5px; display: none;">
+                    <div style="color: #4ecca3; font-weight: bold; margin-bottom: 5px;">📊 Selected Worm</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span>Worm Area:</span>
+                        <span id="stats-worm-area">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span>Worm Length:</span>
+                        <span id="stats-worm-length">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span>Head Area:</span>
+                        <span id="stats-head-area">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span>Head Line:</span>
+                        <span id="stats-head-line">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span>Tail Area:</span>
+                        <span id="stats-tail-area">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span>Tail Line:</span>
+                        <span id="stats-tail-line">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Skeleton toggle -->
+            <div style="margin-top: 10px;">
+                <button id="show-skeleton" style="width: 100%; font-size: 11px; padding: 5px 8px;" title="Toggle Skeleton Visualization">🦴 Show Skeleton</button>
+            </div>
+        </div>
+        
+        <!-- Main area -->
+        <div class="main">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button id="prev-btn" title="Previous Video">◀ Prev</button>
+                    <button id="next-btn" title="Next Video">Next ▶</button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button id="detect-btn" class="primary" title="Run YOLO Detection">🔍 Detect</button>
+                    <button id="detect-all-btn" title="Run Detection on All Videos">🔍 Detect All</button>
+                    <button id="segment-btn" title="Segment Selected">✂️ Segment</button>
+                    <button id="segment-all-btn" title="Segment All Worms">✂️ Segment All</button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button id="select-mode" class="active" title="Select Mode">↖️ Select</button>
+                    <button id="worm-mode" title="Add Manual Worm Detection">🪱 Add Worm</button>
+                    <button id="head-mode" title="Draw Head Box/Line">🟢 Head</button>
+                    <button id="tail-mode" title="Draw Tail Box/Line">🔴 Tail</button>
+                    <button id="brush-add-mode" title="Brush Add to Mask">🖌️+ Add</button>
+                    <button id="brush-remove-mode" title="Brush Remove from Mask">🖌️- Remove</button>
+                </div>
+                
+                <div class="toolbar-group" style="display: flex; align-items: center; gap: 5px;">
+                    <span style="font-size: 11px; color: #aaa;">Draw:</span>
+                    <button id="draw-box-mode" class="active" style="font-size: 11px; padding: 4px 8px;" title="Draw boxes for head/tail">📦 Box</button>
+                    <button id="draw-line-mode" style="font-size: 11px; padding: 4px 8px;" title="Draw lines for head/tail">📏 Line</button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button id="save-btn" title="Save Annotations">💾 Save</button>
+                    <button id="export-btn" title="Export to Excel">📊 Export</button>
+                    <button id="help-btn" title="Show Help">❓ Help</button>
+                </div>
+                
+                <div class="toolbar-group" style="display: flex; align-items: center; gap: 8px;">
+                    <label for="confidence-slider" style="font-size: 12px; color: #aaa;">Conf:</label>
+                    <input type="range" id="confidence-slider" min="10" max="100" value="25" 
+                           style="width: 80px; cursor: pointer;" title="YOLO Detection Confidence Threshold">
+                    <span id="confidence-value" style="font-size: 12px; min-width: 35px;">25%</span>
+                </div>
+            </div>
+            
+            <!-- Canvas -->
+            <div class="canvas-container">
+                <div id="canvas-wrapper">
+                    <canvas id="frame-canvas"></canvas>
+                    <canvas id="annotation-canvas"></canvas>
+                </div>
+                
+                <div class="zoom-controls">
+                    <button id="zoom-out">−</button>
+                    <span id="zoom-level">100%</span>
+                    <button id="zoom-in">+</button>
+                    <button id="zoom-fit">Fit</button>
+                </div>
+                
+                <!-- Brush controls (shown when in brush mode) -->
+                <div id="brush-controls" style="display:none; position:absolute; bottom:60px; right:20px; background:rgba(0,0,0,0.85); padding:10px; border-radius:8px; min-width:200px;">
+                    <div style="color:#fff; font-size:12px; margin-bottom:8px; font-weight:bold;">🖌️ Brush Refinement</div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <label style="color:#aaa; font-size:11px; min-width:50px;">Size:</label>
+                        <input type="range" id="brush-size" min="3" max="50" value="15" style="flex:1;">
+                        <span id="brush-size-value" style="color:#fff; font-size:11px; min-width:25px;">15</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <label style="color:#aaa; font-size:11px; min-width:50px;">Mask:</label>
+                        <select id="brush-mask-type" style="flex:1; padding:4px; background:#1a1a2e; color:#fff; border:1px solid #0f3460; border-radius:4px;">
+                            <option value="worm">🪱 Worm Mask</option>
+                            <option value="head">🟢 Head Mask</option>
+                            <option value="tail">🔴 Tail Mask</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button id="brush-apply" class="primary" style="flex:1; font-size:11px;">✅ Apply</button>
+                        <button id="brush-cancel" style="flex:1; font-size:11px;">❌ Cancel</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status bar -->
+            <div class="statusbar">
+                <span id="status-left">Ready</span>
+                <span id="status-right">No video loaded</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Folder selection modal -->
+    <div class="modal" id="folder-modal">
+        <div class="modal-content" style="max-width: 600px; max-height: 80vh;">
+            <h3>📁 Open Folder</h3>
+            
+            <!-- Current path display -->
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <input type="text" id="folder-path" placeholder="/path/to/videos" 
+                       value="/media/hedtpc/BulkStorage/LeakyGut/CPLT-001 LHK-1B QCd/Movies/"
+                       style="flex: 1;">
+                <button id="folder-go" title="Go to path">Go</button>
+            </div>
+            
+            <!-- Breadcrumb navigation -->
+            <div id="folder-breadcrumb" style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; font-size: 12px;">
+            </div>
+            
+            <!-- Directory listing -->
+            <div id="folder-listing" style="max-height: 400px; overflow-y: auto; border: 1px solid #0f3460; border-radius: 4px; background: #0a0a1a;">
+                <div style="padding: 20px; text-align: center; color: #666;">Loading...</div>
+            </div>
+            
+            <div class="modal-buttons" style="margin-top: 15px;">
+                <button id="folder-cancel">Cancel</button>
+                <button id="folder-open" class="primary">Open Selected Folder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Context menu for mask/box actions -->
+    <div id="context-menu" style="display:none; position:fixed; background:#1a1a2e; border:1px solid #0f3460; border-radius:4px; padding:4px 0; z-index:1000; min-width:150px; box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+        <div id="context-menu-title" style="padding:6px 12px; color:#4ecca3; font-size:12px; border-bottom:1px solid #0f3460; margin-bottom:4px;"></div>
+        <div id="context-menu-items"></div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div class="modal" id="help-modal">
+        <div class="modal-content" style="max-width:700px; max-height:80vh; overflow-y:auto;">
+            <h3 style="color:#4ecca3;">🪱 Worm Annotator Help</h3>
+            
+            <h4 style="color:#e94560; margin-top:15px;">⌨️ Keyboard Shortcuts</h4>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>D</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Run YOLO detection</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>S</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Select mode</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>W</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Add worm mode</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>H</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Draw head (box or line)</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>T</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Draw tail (box or line)</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>L</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Toggle line/box draw mode</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>B</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Brush add mode</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Shift+B</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Brush remove mode</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Ctrl+S</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Save annotations</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>← / →</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Navigate videos</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>+ / -</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Zoom in/out</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Delete</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Delete selected worm</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>[ / ]</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Decrease/increase brush size</td></tr>
+                <tr><td style="padding:5px;"><kbd>?</kbd></td><td style="padding:5px;">Toggle this help</td></tr>
+            </table>
+            
+            <h4 style="color:#e94560; margin-top:20px;">🛠️ Workflow Guide</h4>
+            <ol style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li><strong>Open a folder</strong> with video files using the 📁 button</li>
+                <li><strong>Run detection</strong> with 🔍 Detect to find worms automatically</li>
+                <li><strong>Select a worm</strong> by clicking its box or in the sidebar</li>
+                <li><strong>Draw head/tail</strong> using H and T modes (toggle Box/Line with L)</li>
+                <li><strong>Run segmentation</strong> with ✂️ Segment for pixel-perfect masks</li>
+                <li><strong>Refine masks</strong> with the brush tool if needed</li>
+                <li><strong>Save</strong> your work with Ctrl+S</li>
+            </ol>
+            
+            <h4 style="color:#e94560; margin-top:20px;">🖌️ Brush Refinement</h4>
+            <p style="font-size:13px; line-height:1.6;">Use the brush tool to refine segmentation masks:</p>
+            <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li><strong>🖌️+ Add</strong> - Paint to add pixels to the mask</li>
+                <li><strong>🖌️- Remove</strong> - Paint to remove pixels from the mask</li>
+                <li>Select which mask to edit (worm/head/tail) in the brush controls</li>
+                <li>Adjust brush size with the slider or <kbd>[</kbd>/<kbd>]</kbd> keys</li>
+                <li>Click <strong>Apply</strong> to save changes or <strong>Cancel</strong> to discard</li>
+            </ul>
+            
+            <h4 style="color:#e94560; margin-top:20px;">👁️ Right-Click Menu</h4>
+            <p style="font-size:13px; line-height:1.6;">Right-click on any box to access quick actions: segment, re-segment, delete mask, redraw box, or delete worm.</p>
+            
+            <h4 style="color:#e94560; margin-top:20px;">📝 Tips</h4>
+            <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li>Use "Detect All" to batch process all videos at once</li>
+                <li>Each worm can only have one head and one tail</li>
+                <li>Zoom in for precise annotations</li>
+                <li>Use "Selected Only" view to focus on one worm</li>
+            </ul>
+            
+            <div class="modal-buttons" style="margin-top:20px;">
+                <button id="help-close" class="primary">Got it!</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Straighten worm modal -->
+    <div class="modal" id="straighten-modal">
+        <div class="modal-content" style="max-width: 95vw; width: auto;">
+            <h3>📐 Straightened Worm View</h3>
+            <p style="font-size: 13px; color: #888; margin-bottom: 15px;">
+                Click on the image to mark <span style="color: #00ff00;">head</span> and <span style="color: #ff0000;">tail</span> positions.
+                The worm has been straightened along its skeleton for easier annotation.
+            </p>
+            <div id="straighten-container" style="position: relative; display: flex; justify-content: center; margin-bottom: 15px; overflow-x: auto; max-height: 70vh;">
+                <canvas id="straighten-canvas" style="border: 1px solid #333; cursor: crosshair; image-rendering: pixelated;"></canvas>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                <button id="straighten-mark-head" class="btn" style="background: #00ff0040; border: 1px solid #00ff00;">
+                    🟢 Mark Head
+                </button>
+                <button id="straighten-mark-tail" class="btn" style="background: #ff000040; border: 1px solid #ff0000;">
+                    🔴 Mark Tail
+                </button>
+            </div>
+            <div style="font-size: 12px; color: #888; text-align: center; margin-bottom: 15px;">
+                <span id="straighten-status">Click a button then click on the worm image</span>
+            </div>
+            <div class="modal-buttons">
+                <button id="straighten-apply" class="primary" disabled>Apply Marks</button>
+                <button id="straighten-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <span id="loading-text">Loading...</span>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            mode: 'select', // select, worm, head, tail, brush-add, brush-remove
+            drawMode: 'box', // box or line (for head/tail annotations)
+            zoom: 1,
+            currentWormId: null,
+            annotations: [],
+            drawing: false,
+            startPoint: null,
+            imageWidth: 0,
+            imageHeight: 0,
+            hasUnsavedChanges: false,
+            confidenceThreshold: 0.25,
+            showDetections: true,
+            showHeads: true,
+            showTails: true,
+            showMasks: true,
+            showSelectedOnly: false,
+            showSkeleton: false,
+            // Box editing state
+            editingBox: null,  // {wormId, boxType, handle} - boxType: 'detection', 'head', 'tail'
+            dragStart: null,
+            originalBox: null,
+            // Brush refinement state
+            brushSize: 15,
+            brushMaskType: 'worm', // worm, head, tail
+            brushStrokes: [],      // Array of {x, y, add} points
+            isBrushing: false,
+            // Cached skeleton images
+            skeletonImages: {}
+        };
+        
+        // Helper to display worm IDs
+        // Backend IDs start at 0, display as 1-indexed
+        function displayWormId(id) {
+            return id + 1;
+        }
+        
+        // DOM elements
+        const frameCanvas = document.getElementById('frame-canvas');
+        const annotCanvas = document.getElementById('annotation-canvas');
+        const frameCtx = frameCanvas.getContext('2d');
+        const annotCtx = annotCanvas.getContext('2d');
+        
+        // Colors
+        const colors = {
+            detection: '#0078ff',
+            head: '#00ff00',
+            tail: '#ff0000',
+            selected: '#ffff00',
+            mask: 'rgba(255, 255, 0, 0.3)'
+        };
+        
+        // API helpers
+        function getAuthToken() {
+            return localStorage.getItem('auth_token');
+        }
+        
+        async function api(endpoint, options = {}) {
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(token ? { 'X-Auth-Token': token } : {}),
+                ...options.headers
+            };
+            
+            const response = await fetch(`/api${endpoint}`, {
+                ...options,
+                headers,
+                credentials: 'include',  // Include cookies for auth
+            });
+            
+            // Handle auth errors
+            if (response.status === 401) {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/login';
+                throw new Error('Not authenticated');
+            }
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'API error');
+            }
+            return response.json();
+        }
+        
+        // Load user info
+        async function loadUserInfo() {
+            try {
+                const user = await api('/auth/me');
+                document.getElementById('user-name').textContent = user.username;
+                document.getElementById('user-role').textContent = user.role;
+            } catch (e) {
+                // Redirect to login if not authenticated
+                if (e.message === 'Not authenticated') {
+                    window.location.href = '/login';
+                }
+            }
+        }
+        
+        // Logout handler
+        document.getElementById('logout-btn').onclick = async () => {
+            try {
+                await api('/auth/logout', { method: 'POST' });
+            } catch (e) {
+                // Ignore errors
+            }
+            localStorage.removeItem('auth_token');
+            window.location.href = '/login';
+        };
+        
+        function showLoading(text = 'Loading...') {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading').classList.add('show');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+        
+        function setStatus(text, right = null) {
+            document.getElementById('status-left').textContent = text;
+            if (right !== null) {
+                document.getElementById('status-right').textContent = right;
+            }
+        }
+        
+        // Drawing functions
+        function drawFrame(imageData) {
+            const img = new Image();
+            img.onload = () => {
+                state.imageWidth = img.width;
+                state.imageHeight = img.height;
+                
+                // Set canvas dimensions (both attribute and style to prevent CSS scaling)
+                frameCanvas.width = img.width;
+                frameCanvas.height = img.height;
+                frameCanvas.style.width = img.width + 'px';
+                frameCanvas.style.height = img.height + 'px';
+                
+                annotCanvas.width = img.width;
+                annotCanvas.height = img.height;
+                annotCanvas.style.width = img.width + 'px';
+                annotCanvas.style.height = img.height + 'px';
+                
+                frameCtx.drawImage(img, 0, 0);
+                drawAnnotations();
+                
+                updateZoom();
+            };
+            img.src = 'data:image/jpeg;base64,' + imageData;
+        }
+        
+        // Cache for loaded mask images
+        let maskCache = {};
+        let pendingAnimationFrame = null;
+        
+        function drawAnnotations() {
+            // Cancel any pending animation frame
+            if (pendingAnimationFrame) {
+                cancelAnimationFrame(pendingAnimationFrame);
+                pendingAnimationFrame = null;
+            }
+            
+            annotCtx.clearRect(0, 0, annotCanvas.width, annotCanvas.height);
+            
+            // Filter annotations based on showSelectedOnly state
+            const annotsToDraw = state.showSelectedOnly 
+                ? state.annotations.filter(a => a.worm_id === state.currentWormId)
+                : state.annotations;
+            
+            // Draw cached masks first (non-blocking)
+            if (state.showMasks) {
+                for (const annot of annotsToDraw) {
+                    const cacheKey = `worm_${annot.worm_id}`;
+                    const isCensored = annot.censored;
+                    
+                    // Draw worm mask from cache (blue if censored)
+                    const wormMaskKey = cacheKey + '_worm' + (isCensored ? '_censored' : '');
+                    const wormMaskColor = isCensored ? 'rgba(74, 158, 255, 0.5)' : 'rgba(255, 255, 0, 0.35)';
+                    if (annot.worm_mask && maskCache[wormMaskKey]) {
+                        annotCtx.drawImage(maskCache[wormMaskKey], 0, 0);
+                    } else if (annot.worm_mask) {
+                        loadMaskToCache(annot.worm_mask, wormMaskKey, wormMaskColor);
+                    }
+                    
+                    // Draw head mask from cache
+                    if (annot.head_mask && state.showHeads) {
+                        if (maskCache[cacheKey + '_head']) {
+                            annotCtx.drawImage(maskCache[cacheKey + '_head'], 0, 0);
+                        } else {
+                            loadMaskToCache(annot.head_mask, cacheKey + '_head', 'rgba(0, 255, 0, 0.35)');
+                        }
+                    }
+                    
+                    // Draw tail mask from cache
+                    if (annot.tail_mask && state.showTails) {
+                        if (maskCache[cacheKey + '_tail']) {
+                            annotCtx.drawImage(maskCache[cacheKey + '_tail'], 0, 0);
+                        } else {
+                            loadMaskToCache(annot.tail_mask, cacheKey + '_tail', 'rgba(255, 0, 0, 0.35)');
+                        }
+                    }
+                    
+                    // Draw skeleton from cache
+                    if (state.showSkeleton && annot.worm_mask_stats && annot.worm_mask_stats.skeleton) {
+                        const skelKey = cacheKey + '_skel_' + (annot.worm_id === state.currentWormId ? 'sel' : 'norm');
+                        if (maskCache[skelKey]) {
+                            annotCtx.drawImage(maskCache[skelKey], 0, 0);
+                        } else {
+                            loadSkeletonToCache(annot.worm_mask_stats.skeleton, skelKey, annot.worm_id === state.currentWormId);
+                        }
+                    }
+                }
+            }
+            
+            // Draw boxes immediately
+            drawBoxes(annotsToDraw);
+        }
+        
+        // Fast redraw for editing - only boxes, no mask loading
+        function drawBoxesOnly() {
+            annotCtx.clearRect(0, 0, annotCanvas.width, annotCanvas.height);
+            
+            const annotsToDraw = state.showSelectedOnly 
+                ? state.annotations.filter(a => a.worm_id === state.currentWormId)
+                : state.annotations;
+            
+            // Draw cached masks if available (no loading)
+            if (state.showMasks) {
+                for (const annot of annotsToDraw) {
+                    const cacheKey = `worm_${annot.worm_id}`;
+                    if (annot.worm_mask && maskCache[cacheKey + '_worm']) {
+                        annotCtx.drawImage(maskCache[cacheKey + '_worm'], 0, 0);
+                    }
+                    if (annot.head_mask && state.showHeads && maskCache[cacheKey + '_head']) {
+                        annotCtx.drawImage(maskCache[cacheKey + '_head'], 0, 0);
+                    }
+                    if (annot.tail_mask && state.showTails && maskCache[cacheKey + '_tail']) {
+                        annotCtx.drawImage(maskCache[cacheKey + '_tail'], 0, 0);
+                    }
+                    if (state.showSkeleton) {
+                        const skelKey = cacheKey + '_skel_' + (annot.worm_id === state.currentWormId ? 'sel' : 'norm');
+                        if (maskCache[skelKey]) {
+                            annotCtx.drawImage(maskCache[skelKey], 0, 0);
+                        }
+                    }
+                }
+            }
+            
+            drawBoxes(annotsToDraw);
+        }
+        
+        function loadMaskToCache(maskData, cacheKey, color) {
+            const img = new Image();
+            img.onload = () => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = annotCanvas.width;
+                tempCanvas.height = annotCanvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0, annotCanvas.width, annotCanvas.height);
+                
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imageData.data;
+                
+                const colorMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+                const r = parseInt(colorMatch[1]);
+                const g = parseInt(colorMatch[2]);
+                const b = parseInt(colorMatch[3]);
+                const a = colorMatch[4] ? parseFloat(colorMatch[4]) : 1.0;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i] > 128) {
+                        data[i] = r;
+                        data[i + 1] = g;
+                        data[i + 2] = b;
+                        data[i + 3] = Math.round(a * 255);
+                    } else {
+                        data[i + 3] = 0;
+                    }
+                }
+                
+                tempCtx.putImageData(imageData, 0, 0);
+                maskCache[cacheKey] = tempCanvas;
+                
+                // Schedule a redraw to show the loaded mask
+                if (!pendingAnimationFrame) {
+                    pendingAnimationFrame = requestAnimationFrame(() => {
+                        pendingAnimationFrame = null;
+                        drawAnnotations();
+                    });
+                }
+            };
+            img.src = 'data:image/png;base64,' + maskData;
+        }
+        
+        function loadSkeletonToCache(skeletonData, cacheKey, isSelected) {
+            const img = new Image();
+            img.onload = () => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = annotCanvas.width;
+                tempCanvas.height = annotCanvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0, annotCanvas.width, annotCanvas.height);
+                
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imageData.data;
+                
+                const r = isSelected ? 0 : 255;
+                const g = isSelected ? 255 : 0;
+                const b = 255;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i] > 128) {
+                        data[i] = r;
+                        data[i + 1] = g;
+                        data[i + 2] = b;
+                        data[i + 3] = 255;
+                    } else {
+                        data[i + 3] = 0;
+                    }
+                }
+                
+                tempCtx.putImageData(imageData, 0, 0);
+                maskCache[cacheKey] = tempCanvas;
+                
+                if (!pendingAnimationFrame) {
+                    pendingAnimationFrame = requestAnimationFrame(() => {
+                        pendingAnimationFrame = null;
+                        drawAnnotations();
+                    });
+                }
+            };
+            img.src = 'data:image/png;base64,' + skeletonData;
+        }
+        
+        // Clear mask cache when loading new frame
+        function clearMaskCache() {
+            maskCache = {};
+        }
+        
+        function drawSkeleton(skeletonData, isSelected) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create a temporary canvas to process the skeleton
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = annotCanvas.width;
+                    tempCanvas.height = annotCanvas.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // Draw the skeleton image scaled to canvas size
+                    tempCtx.drawImage(img, 0, 0, annotCanvas.width, annotCanvas.height);
+                    
+                    // Get the image data to process pixels
+                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    const data = imageData.data;
+                    
+                    // Color for skeleton - cyan for selected, magenta for others
+                    const r = isSelected ? 0 : 255;
+                    const g = isSelected ? 255 : 0;
+                    const b = 255;
+                    
+                    // Replace white pixels with colored pixels
+                    for (let i = 0; i < data.length; i += 4) {
+                        if (data[i] > 128) {
+                            data[i] = r;
+                            data[i + 1] = g;
+                            data[i + 2] = b;
+                            data[i + 3] = 255;
+                        } else {
+                            data[i + 3] = 0;
+                        }
+                    }
+                    
+                    tempCtx.putImageData(imageData, 0, 0);
+                    annotCtx.drawImage(tempCanvas, 0, 0);
+                    resolve();
+                };
+                img.onerror = () => resolve();
+                img.src = 'data:image/png;base64,' + skeletonData;
+            });
+        }
+        
+        function drawBoxes(annotsToDraw = null) {
+            const annots = annotsToDraw || (state.showSelectedOnly 
+                ? state.annotations.filter(a => a.worm_id === state.currentWormId)
+                : state.annotations);
+            
+            // Draw boxes and lines on top of masks
+            for (const annot of annots) {
+                const isSelected = annot.worm_id === state.currentWormId;
+                
+                // Draw detection box
+                if (annot.detection_box && state.showDetections) {
+                    drawBox(annot.detection_box, colors.detection, isSelected, `W${displayWormId(annot.worm_id)}`);
+                }
+                
+                // Draw head box or line
+                if (state.showHeads) {
+                    if (annot.head_line) {
+                        drawLine(annot.head_line, colors.head, isSelected, 'H');
+                    } else if (annot.head_box) {
+                        drawBox(annot.head_box, colors.head, isSelected, 'H');
+                    }
+                }
+                
+                // Draw tail box or line
+                if (state.showTails) {
+                    if (annot.tail_line) {
+                        drawLine(annot.tail_line, colors.tail, isSelected, 'T');
+                    } else if (annot.tail_box) {
+                        drawBox(annot.tail_box, colors.tail, isSelected, 'T');
+                    }
+                }
+            }
+        }
+        
+        function drawMask(maskData, color) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create a temporary canvas to process the mask
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = annotCanvas.width;
+                    tempCanvas.height = annotCanvas.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // Draw the mask image scaled to canvas size
+                    tempCtx.drawImage(img, 0, 0, annotCanvas.width, annotCanvas.height);
+                    
+                    // Get the image data to process pixels
+                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    const data = imageData.data;
+                    
+                    // Parse the color (expecting rgba format)
+                    const colorMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+                    const r = parseInt(colorMatch[1]);
+                    const g = parseInt(colorMatch[2]);
+                    const b = parseInt(colorMatch[3]);
+                    const a = colorMatch[4] ? parseFloat(colorMatch[4]) : 1.0;
+                    
+                    // Replace white pixels with colored pixels, make black transparent
+                    for (let i = 0; i < data.length; i += 4) {
+                        // If pixel is bright (part of mask), color it
+                        if (data[i] > 128) {  // Use red channel as grayscale value
+                            data[i] = r;      // R
+                            data[i + 1] = g;  // G
+                            data[i + 2] = b;  // B
+                            data[i + 3] = Math.round(a * 255);  // A
+                        } else {
+                            // Make dark pixels transparent
+                            data[i + 3] = 0;
+                        }
+                    }
+                    
+                    // Put the processed image back
+                    tempCtx.putImageData(imageData, 0, 0);
+                    
+                    // Draw to main canvas
+                    annotCtx.drawImage(tempCanvas, 0, 0);
+                    resolve();
+                };
+                img.onerror = (e) => {
+                    console.error('Error loading mask:', e);
+                    resolve(); // Resolve anyway on error
+                };
+                img.src = 'data:image/png;base64,' + maskData;
+            });
+        }
+        
+        function drawBox(coords, color, selected, label) {
+            const [x1, y1, x2, y2] = coords;
+            const width = x2 - x1;
+            const height = y2 - y1;
+            
+            annotCtx.strokeStyle = selected ? colors.selected : color;
+            annotCtx.lineWidth = selected ? 3 : 2;
+            annotCtx.setLineDash(selected ? [5, 5] : []);
+            annotCtx.strokeRect(x1, y1, width, height);
+            
+            // Label
+            if (label) {
+                annotCtx.fillStyle = color;
+                annotCtx.font = 'bold 14px sans-serif';
+                annotCtx.fillText(label, x1 + 5, y1 - 5);
+            }
+            
+            // Draw resize handles for selected boxes
+            if (selected) {
+                const handleSize = 8;
+                annotCtx.fillStyle = colors.selected;
+                
+                // Corner handles
+                annotCtx.fillRect(x1 - handleSize/2, y1 - handleSize/2, handleSize, handleSize); // NW
+                annotCtx.fillRect(x2 - handleSize/2, y1 - handleSize/2, handleSize, handleSize); // NE
+                annotCtx.fillRect(x1 - handleSize/2, y2 - handleSize/2, handleSize, handleSize); // SW
+                annotCtx.fillRect(x2 - handleSize/2, y2 - handleSize/2, handleSize, handleSize); // SE
+                
+                // Edge handles
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                annotCtx.fillRect(midX - handleSize/2, y1 - handleSize/2, handleSize, handleSize); // N
+                annotCtx.fillRect(midX - handleSize/2, y2 - handleSize/2, handleSize, handleSize); // S
+                annotCtx.fillRect(x1 - handleSize/2, midY - handleSize/2, handleSize, handleSize); // W
+                annotCtx.fillRect(x2 - handleSize/2, midY - handleSize/2, handleSize, handleSize); // E
+            }
+            
+            annotCtx.setLineDash([]);
+        }
+        
+        function drawLine(coords, color, selected, label) {
+            const [x1, y1, x2, y2] = coords;
+            
+            annotCtx.strokeStyle = selected ? colors.selected : color;
+            annotCtx.lineWidth = selected ? 4 : 3;
+            annotCtx.setLineDash(selected ? [5, 5] : []);
+            annotCtx.lineCap = 'round';
+            
+            // Draw the line
+            annotCtx.beginPath();
+            annotCtx.moveTo(x1, y1);
+            annotCtx.lineTo(x2, y2);
+            annotCtx.stroke();
+            
+            // Draw endpoints
+            const endpointSize = selected ? 6 : 4;
+            annotCtx.fillStyle = selected ? colors.selected : color;
+            
+            // Start point (filled circle)
+            annotCtx.beginPath();
+            annotCtx.arc(x1, y1, endpointSize, 0, Math.PI * 2);
+            annotCtx.fill();
+            
+            // End point (arrow or filled circle)
+            annotCtx.beginPath();
+            annotCtx.arc(x2, y2, endpointSize, 0, Math.PI * 2);
+            annotCtx.fill();
+            
+            // Draw arrowhead at end
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowLen = 12;
+            annotCtx.beginPath();
+            annotCtx.moveTo(x2, y2);
+            annotCtx.lineTo(x2 - arrowLen * Math.cos(angle - Math.PI/6), y2 - arrowLen * Math.sin(angle - Math.PI/6));
+            annotCtx.moveTo(x2, y2);
+            annotCtx.lineTo(x2 - arrowLen * Math.cos(angle + Math.PI/6), y2 - arrowLen * Math.sin(angle + Math.PI/6));
+            annotCtx.stroke();
+            
+            // Label
+            if (label) {
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                annotCtx.fillStyle = color;
+                annotCtx.font = 'bold 14px sans-serif';
+                annotCtx.fillText(label, midX + 5, midY - 5);
+            }
+            
+            annotCtx.setLineDash([]);
+        }
+        
+        function drawTempLine(x1, y1, x2, y2) {
+            const modeColors = {head: colors.head, tail: colors.tail};
+            const color = modeColors[state.mode] || colors.detection;
+            annotCtx.strokeStyle = color;
+            annotCtx.lineWidth = 3;
+            annotCtx.setLineDash([5, 5]);
+            annotCtx.lineCap = 'round';
+            
+            annotCtx.beginPath();
+            annotCtx.moveTo(x1, y1);
+            annotCtx.lineTo(x2, y2);
+            annotCtx.stroke();
+            
+            // Draw endpoints
+            annotCtx.fillStyle = color;
+            annotCtx.beginPath();
+            annotCtx.arc(x1, y1, 5, 0, Math.PI * 2);
+            annotCtx.fill();
+            annotCtx.beginPath();
+            annotCtx.arc(x2, y2, 5, 0, Math.PI * 2);
+            annotCtx.fill();
+            
+            annotCtx.setLineDash([]);
+        }
+        
+        function drawTempBox(x1, y1, x2, y2) {
+            const modeColors = {worm: colors.detection, head: colors.head, tail: colors.tail};
+            const color = modeColors[state.mode] || colors.detection;
+            annotCtx.strokeStyle = color;
+            annotCtx.lineWidth = 2;
+            annotCtx.setLineDash([5, 5]);
+            annotCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            annotCtx.setLineDash([]);
+        }
+        
+        // Draw a brush stroke for mask refinement
+        function drawBrushStroke(x, y, isAdd) {
+            annotCtx.beginPath();
+            annotCtx.arc(x, y, state.brushSize, 0, Math.PI * 2);
+            if (isAdd) {
+                // Green semi-transparent for adding
+                annotCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            } else {
+                // Red semi-transparent for removing
+                annotCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+            }
+            annotCtx.fill();
+        }
+        
+        // Redraw all brush strokes (for after annotation redraw)
+        function redrawBrushStrokes() {
+            for (const stroke of state.brushStrokes) {
+                drawBrushStroke(stroke.x, stroke.y, stroke.add);
+            }
+        }
+        
+        // Update annotation tree
+        function updateAnnotationTree() {
+            const tree = document.getElementById('annotation-tree');
+            
+            if (state.annotations.length === 0) {
+                tree.innerHTML = '<li style="color: #666; padding: 10px;">No annotations</li>';
+                updateStats();
+                return;
+            }
+            
+            tree.innerHTML = state.annotations.map(annot => `
+                <li class="worm-item">
+                    <div class="worm-header ${annot.worm_id === state.currentWormId ? 'selected' : ''} ${annot.censored ? 'censored' : ''}" 
+                         onclick="selectWorm(${annot.worm_id})">
+                        🪱 Worm ${displayWormId(annot.worm_id)}
+                        <span style="margin-left: auto; font-size: 11px; opacity: 0.7;">
+                            ${annot.confidence ? (annot.confidence * 100).toFixed(0) + '%' : ''}
+                        </span>
+                        <button onclick="event.stopPropagation(); toggleCensor(${annot.worm_id})" 
+                                style="margin-left: 5px; padding: 2px 6px; font-size: 10px; background: ${annot.censored ? '#4a9eff' : '#333'};"
+                                title="${annot.censored ? 'Uncensor Worm' : 'Censor Worm (exclude from analysis)'}">🚫</button>
+                        <button onclick="event.stopPropagation(); openStraightenModal(${annot.worm_id})" 
+                                style="margin-left: 2px; padding: 2px 6px; font-size: 10px; background: #333;"
+                                title="View Straightened Worm">📐</button>
+                        <button onclick="event.stopPropagation(); deleteWorm(${annot.worm_id})" 
+                                style="margin-left: 2px; padding: 2px 6px; font-size: 10px; background: #e94560;"
+                                title="Delete Worm">✕</button>
+                    </div>
+                    <div class="worm-children">
+                        ${annot.detection_box 
+                            ? `<div class="box-item detection" style="display:flex;align-items:center;gap:5px;">
+                                <span style="flex:1">📦 Detection</span>
+                                ${!annot.has_worm_mask 
+                                    ? `<button onclick="segmentBox(${annot.worm_id}, 'worm')" 
+                                              style="padding:1px 4px;font-size:9px;background:#4ecca3" title="Segment">✂️</button>`
+                                    : ''}
+                               </div>` 
+                            : ''}
+                        ${annot.head_line
+                            ? `<div class="box-item head" style="display:flex;align-items:center;gap:5px;">
+                                <span onclick="editHead(${annot.worm_id})" style="cursor:pointer;flex:1" title="Click to redraw">🟢 Head Line ✎</span>
+                                <button onclick="event.stopPropagation(); clearBox(${annot.worm_id}, 'head')" 
+                                        style="padding:1px 4px;font-size:9px;background:#e94560" title="Delete">✕</button>
+                               </div>`
+                            : annot.head_box 
+                            ? `<div class="box-item head" style="display:flex;align-items:center;gap:5px;">
+                                <span onclick="editHead(${annot.worm_id})" style="cursor:pointer;flex:1" title="Click to redraw">🟢 Head Box ✎</span>
+                                ${!annot.has_head_mask 
+                                    ? `<button onclick="segmentBox(${annot.worm_id}, 'head')" 
+                                              style="padding:1px 4px;font-size:9px;background:#4ecca3" title="Segment head">✂️</button>`
+                                    : ''}
+                                <button onclick="event.stopPropagation(); clearBox(${annot.worm_id}, 'head')" 
+                                        style="padding:1px 4px;font-size:9px;background:#e94560" title="Delete">✕</button>
+                               </div>` 
+                            : `<div class="box-item head" onclick="editHead(${annot.worm_id})" style="opacity:0.4;cursor:pointer" title="Click to draw">○ Head (click to add)</div>`}
+                        ${annot.tail_line
+                            ? `<div class="box-item tail" style="display:flex;align-items:center;gap:5px;">
+                                <span onclick="editTail(${annot.worm_id})" style="cursor:pointer;flex:1" title="Click to redraw">🔴 Tail Line ✎</span>
+                                <button onclick="event.stopPropagation(); clearBox(${annot.worm_id}, 'tail')" 
+                                        style="padding:1px 4px;font-size:9px;background:#e94560" title="Delete">✕</button>
+                               </div>`
+                            : annot.tail_box 
+                            ? `<div class="box-item tail" style="display:flex;align-items:center;gap:5px;">
+                                <span onclick="editTail(${annot.worm_id})" style="cursor:pointer;flex:1" title="Click to redraw">🔴 Tail Box ✎</span>
+                                ${!annot.has_tail_mask 
+                                    ? `<button onclick="segmentBox(${annot.worm_id}, 'tail')" 
+                                              style="padding:1px 4px;font-size:9px;background:#4ecca3" title="Segment tail">✂️</button>`
+                                    : ''}
+                                <button onclick="event.stopPropagation(); clearBox(${annot.worm_id}, 'tail')" 
+                                        style="padding:1px 4px;font-size:9px;background:#e94560" title="Delete">✕</button>
+                               </div>` 
+                            : `<div class="box-item tail" onclick="editTail(${annot.worm_id})" style="opacity:0.4;cursor:pointer" title="Click to draw">○ Tail (click to add)</div>`}
+                        ${annot.has_worm_mask 
+                            ? `<div class="box-item mask" style="display:flex;align-items:center;gap:5px;">
+                                <span style="flex:1">🎭 Worm Mask</span>
+                                <button onclick="resegmentMask(${annot.worm_id}, 'worm')" 
+                                        style="padding:1px 4px;font-size:9px;background:#4ecca3" title="Re-segment">🔄</button>
+                                <button onclick="clearMask(${annot.worm_id}, 'worm')" 
+                                        style="padding:1px 4px;font-size:9px;background:#e94560" title="Clear mask">✕</button>
+                               </div>` 
+                            : ''}
+                        ${annot.has_head_mask 
+                            ? `<div class="box-item mask" style="display:flex;align-items:center;gap:5px;">
+                                <span style="flex:1">🎭 Head Mask</span>
+                                <button onclick="resegmentMask(${annot.worm_id}, 'head')" 
+                                        style="padding:1px 4px;font-size:9px;background:#4ecca3" title="Re-segment">🔄</button>
+                                <button onclick="clearMask(${annot.worm_id}, 'head')" 
+                                        style="padding:1px 4px;font-size:9px;background:#e94560" title="Clear mask">✕</button>
+                               </div>` 
+                            : ''}
+                        ${annot.has_tail_mask 
+                            ? `<div class="box-item mask" style="display:flex;align-items:center;gap:5px;">
+                                <span style="flex:1">🎭 Tail Mask</span>
+                                <button onclick="resegmentMask(${annot.worm_id}, 'tail')" 
+                                        style="padding:1px 4px;font-size:9px;background:#4ecca3" title="Re-segment">🔄</button>
+                                <button onclick="clearMask(${annot.worm_id}, 'tail')" 
+                                        style="padding:1px 4px;font-size:9px;background:#e94560" title="Clear mask">✕</button>
+                               </div>` 
+                            : ''}
+                    </div>
+                </li>
+            `).join('');
+            
+            updateStats();
+        }
+        
+        function updateStats() {
+            const total = state.annotations.length;
+            // Count complete if has head (box or line) AND tail (box or line)
+            const complete = state.annotations.filter(a => 
+                (a.head_box || a.head_line) && (a.tail_box || a.tail_line)
+            ).length;
+            const withMasks = state.annotations.filter(a => a.has_worm_mask || a.has_head_mask || a.has_tail_mask).length;
+            
+            document.getElementById('stats-total').textContent = total;
+            document.getElementById('stats-complete').textContent = complete;
+            document.getElementById('stats-masks').textContent = withMasks;
+            
+            // Update selected worm stats
+            updateSelectedWormStats();
+        }
+        
+        function updateSelectedWormStats() {
+            const statsPanel = document.getElementById('selected-worm-stats');
+            
+            if (!state.currentWormId) {
+                statsPanel.style.display = 'none';
+                return;
+            }
+            
+            const annot = state.annotations.find(a => a.worm_id === state.currentWormId);
+            if (!annot) {
+                statsPanel.style.display = 'none';
+                return;
+            }
+            
+            statsPanel.style.display = 'block';
+            
+            // Worm mask stats
+            if (annot.worm_mask_stats) {
+                const stats = annot.worm_mask_stats;
+                document.getElementById('stats-worm-area').textContent = stats.area ? stats.area.toLocaleString() + ' px' : '-';
+                document.getElementById('stats-worm-length').textContent = stats.skeleton_length ? stats.skeleton_length.toFixed(1) + ' px' : '-';
+                
+                // Cache skeleton image if available
+                if (stats.skeleton && !state.skeletonImages[state.currentWormId]) {
+                    state.skeletonImages[state.currentWormId] = stats.skeleton;
+                }
+            } else {
+                document.getElementById('stats-worm-area').textContent = '-';
+                document.getElementById('stats-worm-length').textContent = '-';
+            }
+            
+            // Head mask stats
+            if (annot.head_mask_stats) {
+                document.getElementById('stats-head-area').textContent = annot.head_mask_stats.area ? annot.head_mask_stats.area.toLocaleString() + ' px' : '-';
+            } else {
+                document.getElementById('stats-head-area').textContent = '-';
+            }
+            
+            // Head line length
+            if (annot.head_line) {
+                const [x1, y1, x2, y2] = annot.head_line;
+                const headLineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                document.getElementById('stats-head-line').textContent = headLineLength.toFixed(1) + ' px';
+            } else {
+                document.getElementById('stats-head-line').textContent = '-';
+            }
+            
+            // Tail mask stats
+            if (annot.tail_mask_stats) {
+                document.getElementById('stats-tail-area').textContent = annot.tail_mask_stats.area ? annot.tail_mask_stats.area.toLocaleString() + ' px' : '-';
+            } else {
+                document.getElementById('stats-tail-area').textContent = '-';
+            }
+            
+            // Tail line length
+            if (annot.tail_line) {
+                const [x1, y1, x2, y2] = annot.tail_line;
+                const tailLineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                document.getElementById('stats-tail-line').textContent = tailLineLength.toFixed(1) + ' px';
+            } else {
+                document.getElementById('stats-tail-line').textContent = '-';
+            }
+        }
+        
+        function selectWorm(wormId) {
+            state.currentWormId = wormId;
+            updateAnnotationTree();
+            drawAnnotations();
+            updateSelectedWormStats();
+            setStatus(`Selected Worm ${displayWormId(wormId)}`);
+        }
+        
+        async function deleteWorm(wormId) {
+            try {
+                await api(`/annotation/${wormId}`, { method: 'DELETE' });
+                state.hasUnsavedChanges = true;
+                if (state.currentWormId === wormId) {
+                    state.currentWormId = null;
+                }
+                await loadCurrentFrame();
+                setStatus('Worm deleted');
+            } catch (e) {
+                alert('Error deleting worm: ' + e.message);
+            }
+        }
+        
+        async function toggleCensor(wormId) {
+            const annot = state.annotations.find(a => a.worm_id === wormId);
+            if (!annot) return;
+            
+            const newCensored = !annot.censored;
+            try {
+                await api(`/annotation/${wormId}/censor`, { 
+                    method: 'POST',
+                    body: JSON.stringify({ censored: newCensored })
+                });
+                state.hasUnsavedChanges = true;
+                
+                // Clear cached mask so it redraws with correct color
+                const cacheKey = `worm_${wormId}`;
+                delete maskCache[cacheKey + '_worm'];
+                delete maskCache[cacheKey + '_worm_censored'];
+                
+                await loadCurrentFrame();
+                setStatus(`Worm ${displayWormId(wormId)} ${newCensored ? 'censored' : 'uncensored'}`);
+            } catch (e) {
+                alert('Error toggling censor: ' + e.message);
+            }
+        }
+        
+        // Straighten modal state
+        const straightenState = {
+            wormId: null,
+            imageData: null,
+            width: 0,
+            height: 0,
+            mode: null,  // 'head' or 'tail'
+            headY: null,
+            tailY: null
+        };
+        
+        async function openStraightenModal(wormId) {
+            const annot = state.annotations.find(a => a.worm_id === wormId);
+            if (!annot || !annot.has_worm_mask) {
+                alert('This worm needs a segmentation mask to view the straightened view');
+                return;
+            }
+            
+            setStatus('Loading straightened view...');
+            try {
+                const result = await api(`/annotation/${wormId}/straightened`);
+                if (!result.success || !result.straightened_image) {
+                    throw new Error(result.error || 'Failed to generate straightened view');
+                }
+                
+                // Store state
+                straightenState.wormId = wormId;
+                straightenState.width = result.width;
+                straightenState.height = result.height;
+                straightenState.mode = null;
+                straightenState.headY = null;
+                straightenState.tailY = null;
+                
+                // Draw the image
+                const canvas = document.getElementById('straighten-canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const img = new Image();
+                img.onload = () => {
+                    // Scale up significantly for better visibility
+                    // Target: width fills most of modal, minimum 3x scale
+                    const minScale = 3;
+                    const targetWidth = Math.min(window.innerWidth * 0.85, 1400);
+                    const scaleForTarget = targetWidth / result.width;
+                    const scale = Math.max(minScale, Math.min(8, scaleForTarget));
+                    canvas.width = result.width * scale;
+                    canvas.height = result.height * scale;
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    straightenState.scale = scale;
+                    straightenState.imageData = img;
+                    
+                    document.getElementById('straighten-modal').classList.add('show');
+                    document.getElementById('straighten-status').textContent = 'Click a button then click on the worm image';
+                    document.getElementById('straighten-apply').disabled = true;
+                };
+                img.src = 'data:image/png;base64,' + result.straightened_image;
+                
+                setStatus('Straightened view loaded');
+            } catch (e) {
+                alert('Error loading straightened view: ' + e.message);
+                setStatus('Error loading straightened view');
+            }
+        }
+        
+        function redrawStraightenCanvas() {
+            const canvas = document.getElementById('straighten-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!straightenState.imageData) return;
+            
+            // Redraw base image
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(straightenState.imageData, 0, 0, canvas.width, canvas.height);
+            
+            // Draw head line if set
+            if (straightenState.headY !== null) {
+                const y = straightenState.headY * straightenState.scale;
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+                ctx.fillStyle = '#00ff00';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('HEAD', 5, y - 5);
+            }
+            
+            // Draw tail line if set
+            if (straightenState.tailY !== null) {
+                const y = straightenState.tailY * straightenState.scale;
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+                ctx.fillStyle = '#ff0000';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('TAIL', 5, y - 5);
+            }
+            
+            // Enable apply button if both are set
+            document.getElementById('straighten-apply').disabled = 
+                straightenState.headY === null || straightenState.tailY === null;
+        }
+
+        function editHead(wormId) {
+            selectWorm(wormId);
+            document.getElementById('head-mode').click();
+            setStatus(`Draw head box for Worm ${displayWormId(wormId)}`);
+        }
+        
+        function editTail(wormId) {
+            selectWorm(wormId);
+            document.getElementById('tail-mode').click();
+            setStatus(`Draw tail box for Worm ${displayWormId(wormId)}`);
+        }
+        
+        async function clearMask(wormId, maskType) {
+            try {
+                await api(`/annotation/${wormId}/mask/${maskType}`, { method: 'DELETE' });
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Cleared ${maskType} mask for Worm ${displayWormId(wormId)}`);
+            } catch (e) {
+                alert('Error clearing mask: ' + e.message);
+            }
+        }
+        
+        async function clearBox(wormId, boxType) {
+            try {
+                // Delete the box/line
+                await api(`/annotation/${wormId}/box/${boxType}`, { method: 'DELETE' });
+                
+                // Also delete the associated mask if it exists
+                try {
+                    await api(`/annotation/${wormId}/mask/${boxType}`, { method: 'DELETE' });
+                } catch (maskErr) {
+                    // Ignore if mask doesn't exist
+                }
+                
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Cleared ${boxType} for Worm ${displayWormId(wormId)}`);
+            } catch (e) {
+                alert('Error clearing box: ' + e.message);
+            }
+        }
+        
+        async function resegmentMask(wormId, maskType) {
+            setStatus(`Re-segmenting ${maskType} for Worm ${displayWormId(wormId)}...`);
+            
+            try {
+                const result = await api(`/segment/${wormId}/${maskType}`, { method: 'POST' });
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Re-segmented ${maskType} mask for Worm ${displayWormId(wormId)} (score: ${(result.score * 100).toFixed(1)}%)`);
+            } catch (e) {
+                alert('Error re-segmenting: ' + e.message);
+                setStatus('Re-segmentation failed');
+            }
+        }
+        
+        async function segmentBox(wormId, maskType) {
+            // Segment a specific box that doesn't have a mask yet
+            setStatus(`Segmenting ${maskType} for Worm ${displayWormId(wormId)}...`);
+            
+            try {
+                const result = await api(`/segment/${wormId}/${maskType}`, { method: 'POST' });
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Created ${maskType} mask for Worm ${displayWormId(wormId)} (score: ${(result.score * 100).toFixed(1)}%)`);
+            } catch (e) {
+                alert('Error segmenting: ' + e.message);
+                setStatus('Segmentation failed');
+            }
+        }
+
+        async function deleteSelectedWorm() {
+            if (state.currentWormId === null) return;
+            
+            try {
+                await api(`/annotation/${state.currentWormId}`, { method: 'DELETE' });
+                state.hasUnsavedChanges = true;
+                state.currentWormId = null;
+                await loadCurrentFrame();
+                setStatus('Worm deleted');
+            } catch (e) {
+                alert('Error deleting worm: ' + e.message);
+            }
+        }
+        
+        // Zoom
+        function updateZoom() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            wrapper.style.transform = `scale(${state.zoom})`;
+            wrapper.style.transformOrigin = 'top left';
+            document.getElementById('zoom-level').textContent = Math.round(state.zoom * 100) + '%';
+        }
+        
+        // Folder browser functions
+        let currentBrowsePath = '/';
+        
+        async function browseTo(path) {
+            try {
+                const result = await api('/browse', {
+                    method: 'POST',
+                    body: JSON.stringify({ path: path || '/' })
+                });
+                
+                currentBrowsePath = result.current_path;
+                document.getElementById('folder-path').value = currentBrowsePath;
+                
+                // Update breadcrumb
+                const breadcrumb = document.getElementById('folder-breadcrumb');
+                if (result.current_path === '/') {
+                    breadcrumb.innerHTML = '<span style="color:#4ecca3;">/ Root</span>';
+                } else {
+                    const parts = result.current_path.split('/').filter(p => p);
+                    let accumulated = '';
+                    let html = '<span class="breadcrumb-item" onclick="browseTo(\'/\')" style="cursor:pointer; color:#4ecca3;">🏠</span>';
+                    parts.forEach((part, i) => {
+                        accumulated += '/' + part;
+                        const isLast = i === parts.length - 1;
+                        html += ` <span style="color:#666;">/</span> `;
+                        if (isLast) {
+                            html += `<span style="color:#4ecca3;">${part}</span>`;
+                        } else {
+                            html += `<span class="breadcrumb-item" onclick="browseTo('${accumulated}')" style="cursor:pointer; color:#66a3ff;">${part}</span>`;
+                        }
+                    });
+                    breadcrumb.innerHTML = html;
+                }
+                
+                // Update listing
+                const listing = document.getElementById('folder-listing');
+                if (result.entries.length === 0) {
+                    listing.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Empty directory</div>';
+                    return;
+                }
+                
+                let html = '<div style="display: flex; flex-direction: column;">';
+                
+                // Add parent directory link
+                if (result.parent_path) {
+                    html += `<div class="folder-item" onclick="browseTo('${result.parent_path}')" 
+                                 style="padding: 10px 15px; border-bottom: 1px solid #0f3460; cursor: pointer; display: flex; align-items: center; gap: 10px;"
+                                 onmouseover="this.style.background='#1a1a3e'" onmouseout="this.style.background=''">
+                                <span style="font-size: 18px;">📁</span>
+                                <span style="color: #66a3ff;">..</span>
+                                <span style="color: #666; font-size: 11px; margin-left: auto;">Parent Directory</span>
+                            </div>`;
+                }
+                
+                result.entries.forEach(entry => {
+                    if (entry.is_dir) {
+                        const icon = entry.is_shortcut ? '🔗' : (entry.has_videos ? '🎬' : '📁');
+                        const nameColor = entry.has_videos ? '#4ecca3' : '#66a3ff';
+                        const badge = entry.has_videos ? '<span style="background:#4ecca3; color:#000; font-size:9px; padding:2px 5px; border-radius:3px; margin-left:8px;">VIDEOS</span>' : '';
+                        html += `<div class="folder-item" onclick="browseTo('${entry.path}')" 
+                                     style="padding: 10px 15px; border-bottom: 1px solid #0f3460; cursor: pointer; display: flex; align-items: center; gap: 10px;"
+                                     onmouseover="this.style.background='#1a1a3e'" onmouseout="this.style.background=''"
+                                     ondblclick="event.stopPropagation(); document.getElementById('folder-path').value='${entry.path}'; document.getElementById('folder-open').click();">
+                                    <span style="font-size: 18px;">${icon}</span>
+                                    <span style="color: ${nameColor};">${entry.name}</span>
+                                    ${badge}
+                                </div>`;
+                    }
+                });
+                
+                html += '</div>';
+                listing.innerHTML = html;
+                
+            } catch (e) {
+                document.getElementById('folder-listing').innerHTML = `<div style="padding: 20px; text-align: center; color: #e94560;">Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Event handlers
+        document.getElementById('open-folder-btn').onclick = () => {
+            document.getElementById('folder-modal').classList.add('show');
+            // Start browsing from root or current path
+            const currentPath = document.getElementById('folder-path').value || '/';
+            browseTo(currentPath);
+        };
+        
+        document.getElementById('folder-cancel').onclick = () => {
+            document.getElementById('folder-modal').classList.remove('show');
+        };
+        
+        document.getElementById('folder-go').onclick = () => {
+            const path = document.getElementById('folder-path').value;
+            browseTo(path);
+        };
+        
+        // Allow Enter key in path input
+        document.getElementById('folder-path').onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('folder-go').click();
+            }
+        };
+        
+        document.getElementById('folder-open').onclick = async () => {
+            const path = document.getElementById('folder-path').value;
+            document.getElementById('folder-modal').classList.remove('show');
+            
+            showLoading('Opening folder...');
+            try {
+                const result = await api('/open_folder', {
+                    method: 'POST',
+                    body: JSON.stringify({ path })
+                });
+                
+                // Update folder display
+                document.getElementById('current-folder-path').textContent = path;
+                document.getElementById('current-folder').style.display = 'block';
+                
+                // Update video list
+                const list = document.getElementById('video-list');
+                list.innerHTML = result.videos.map((name, idx) => 
+                    `<li onclick="selectVideo(${idx})">${name}</li>`
+                ).join('');
+                
+                // Load first frame
+                await loadCurrentFrame();
+                setStatus(`Loaded ${result.video_count} videos`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            hideLoading();
+        };
+        
+        async function selectVideo(index) {
+            showLoading('Loading video...');
+            try {
+                clearMaskCache();  // Clear cached masks when switching videos
+                const result = await api(`/video/${index}`);
+                state.annotations = result.annotations;
+                state.currentWormId = state.annotations[0]?.worm_id || null;
+                drawFrame(result.image);
+                updateAnnotationTree();
+                
+                // Update video list selection
+                document.querySelectorAll('.video-list li').forEach((li, i) => {
+                    li.classList.toggle('active', i === index);
+                });
+                
+                setStatus('Ready', result.video_path);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            hideLoading();
+        }
+        
+        async function loadCurrentFrame() {
+            try {
+                // Clear mask cache when loading new frame
+                clearMaskCache();
+                
+                const result = await api('/frame');
+                state.annotations = result.annotations;
+                state.currentWormId = state.annotations[0]?.worm_id || null;
+                drawFrame(result.image);
+                updateAnnotationTree();
+                setStatus('Ready', result.video_path);
+            } catch (e) {
+                console.error('Error loading frame:', e);
+            }
+        }
+        
+        document.getElementById('detect-btn').onclick = async () => {
+            showLoading('Running detection...');
+            try {
+                const result = await api('/detect', { method: 'POST' });
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Detected ${result.count} worms`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            hideLoading();
+        };
+        
+        document.getElementById('detect-all-btn').onclick = async () => {
+            if (!confirm('Run detection on ALL videos in the folder? This may take a while.')) {
+                return;
+            }
+            
+            showLoading('Running batch detection...');
+            try {
+                const result = await api('/detect/batch', { method: 'POST' });
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Batch detection complete: ${result.total_detections} worms in ${result.processed} videos`);
+                alert(`Batch Detection Complete!\n\nProcessed: ${result.processed} videos\nTotal Worms Found: ${result.total_detections}`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            hideLoading();
+        };
+        
+        document.getElementById('segment-btn').onclick = async () => {
+            if (state.currentWormId === null) {
+                alert('Please select a worm first');
+                return;
+            }
+            
+            const annot = state.annotations.find(a => a.worm_id === state.currentWormId);
+            if (!annot || !annot.detection_box) {
+                alert('No detection box for selected worm');
+                return;
+            }
+            
+            showLoading('Segmenting...');
+            try {
+                const result = await api('/segment', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        bbox: {
+                            x1: annot.detection_box[0],
+                            y1: annot.detection_box[1],
+                            x2: annot.detection_box[2],
+                            y2: annot.detection_box[3],
+                            box_type: 'worm'
+                        },
+                        worm_id: state.currentWormId
+                    })
+                });
+                
+                // Draw mask overlay
+                const maskImg = new Image();
+                maskImg.onload = () => {
+                    annotCtx.globalAlpha = 0.4;
+                    annotCtx.drawImage(maskImg, 0, 0);
+                    annotCtx.globalAlpha = 1;
+                };
+                maskImg.src = 'data:image/png;base64,' + result.mask;
+                
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Segmented worm ${displayWormId(state.currentWormId)} (score: ${(result.score * 100).toFixed(1)}%)`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            hideLoading();
+        };
+        
+        document.getElementById('segment-all-btn').onclick = async () => {
+            if (state.annotations.length === 0) {
+                alert('No worms to segment. Run detection first.');
+                return;
+            }
+            
+            showLoading('Segmenting all worms...');
+            try {
+                const result = await api('/segment/all', { method: 'POST' });
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                setStatus(`Segmentation complete: ${result.success} masks created`);
+                alert(`Segmentation Complete!\n\nBoxes Processed: ${result.processed}\nMasks Created: ${result.success}\nFailed: ${result.failed}`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            hideLoading();
+        };
+        
+        // Mode buttons
+        ['select', 'worm', 'head', 'tail'].forEach(mode => {
+            document.getElementById(`${mode}-mode`).onclick = () => {
+                state.mode = mode;
+                document.querySelectorAll('.toolbar-group button').forEach(btn => {
+                    if (btn.id.endsWith('-mode')) {
+                        btn.classList.toggle('active', btn.id === `${mode}-mode`);
+                    }
+                });
+                annotCanvas.style.cursor = mode === 'select' ? 'default' : 'crosshair';
+                const modeNames = {select: 'Select', worm: 'Add Worm', head: 'Draw Head', tail: 'Draw Tail'};
+                setStatus(`Mode: ${modeNames[mode]}`);
+                // Hide brush controls when not in brush mode
+                document.getElementById('brush-controls').style.display = 'none';
+                // Hide masks only when head or tail tools are active (to see image while drawing)
+                if (mode === 'head' || mode === 'tail') {
+                    state.showMasks = false;
+                } else {
+                    state.showMasks = true;
+                }
+                // Update the masks toggle button visual state
+                document.getElementById('show-masks').classList.toggle('active', state.showMasks);
+                drawAnnotations();
+            };
+        });
+        
+        // Brush mode buttons
+        ['brush-add', 'brush-remove'].forEach(mode => {
+            document.getElementById(`${mode}-mode`).onclick = () => {
+                if (state.currentWormId === null) {
+                    alert('Please select a worm first');
+                    return;
+                }
+                state.mode = mode;
+                state.brushStrokes = [];
+                document.querySelectorAll('.toolbar-group button').forEach(btn => {
+                    if (btn.id.endsWith('-mode')) {
+                        btn.classList.toggle('active', btn.id === `${mode}-mode`);
+                    }
+                });
+                annotCanvas.style.cursor = 'crosshair';
+                document.getElementById('brush-controls').style.display = 'block';
+                const modeNames = {'brush-add': 'Brush Add', 'brush-remove': 'Brush Remove'};
+                setStatus(`Mode: ${modeNames[mode]} - Paint on mask, then Apply`);
+            };
+        });
+        
+        // Brush size slider
+        document.getElementById('brush-size').oninput = (e) => {
+            state.brushSize = parseInt(e.target.value);
+            document.getElementById('brush-size-value').textContent = state.brushSize;
+        };
+        
+        // Brush mask type selector
+        document.getElementById('brush-mask-type').onchange = (e) => {
+            state.brushMaskType = e.target.value;
+        };
+        
+        // Brush apply button
+        document.getElementById('brush-apply').onclick = async () => {
+            if (state.brushStrokes.length === 0) {
+                setStatus('No brush strokes to apply');
+                return;
+            }
+            
+            showLoading('Applying brush strokes...');
+            try {
+                await api('/brush-mask', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        worm_id: state.currentWormId,
+                        mask_type: state.brushMaskType,
+                        strokes: state.brushStrokes,
+                        brush_size: state.brushSize
+                    })
+                });
+                state.hasUnsavedChanges = true;
+                state.brushStrokes = [];
+                await loadCurrentFrame();
+                setStatus('Brush strokes applied');
+            } catch (e) {
+                alert('Error applying brush: ' + e.message);
+            }
+            hideLoading();
+        };
+        
+        // Brush cancel button
+        document.getElementById('brush-cancel').onclick = () => {
+            state.brushStrokes = [];
+            document.getElementById('select-mode').click();
+            drawAnnotations();
+            setStatus('Brush cancelled');
+        };
+        
+        // Help button
+        document.getElementById('help-btn').onclick = () => {
+            document.getElementById('help-modal').classList.add('show');
+        };
+        
+        document.getElementById('help-close').onclick = () => {
+            document.getElementById('help-modal').classList.remove('show');
+        };
+        
+        // Straighten modal events
+        document.getElementById('straighten-close').onclick = () => {
+            document.getElementById('straighten-modal').classList.remove('show');
+            straightenState.wormId = null;
+            straightenState.imageData = null;
+        };
+        
+        document.getElementById('straighten-mark-head').onclick = function() {
+            straightenState.mode = 'head';
+            this.style.outline = '2px solid #00ff00';
+            document.getElementById('straighten-mark-tail').style.outline = 'none';
+            document.getElementById('straighten-status').textContent = 'Click on the worm image to mark the HEAD position';
+        };
+        
+        document.getElementById('straighten-mark-tail').onclick = function() {
+            straightenState.mode = 'tail';
+            this.style.outline = '2px solid #ff0000';
+            document.getElementById('straighten-mark-head').style.outline = 'none';
+            document.getElementById('straighten-status').textContent = 'Click on the worm image to mark the TAIL position';
+        };
+        
+        document.getElementById('straighten-canvas').onclick = function(e) {
+            if (!straightenState.mode) {
+                document.getElementById('straighten-status').textContent = 'First click "Mark Head" or "Mark Tail" button';
+                return;
+            }
+            
+            const rect = this.getBoundingClientRect();
+            const y = Math.round((e.clientY - rect.top) / straightenState.scale);
+            
+            if (straightenState.mode === 'head') {
+                straightenState.headY = y;
+                document.getElementById('straighten-status').textContent = `Head marked at row ${y}. Now mark the tail.`;
+                straightenState.mode = null;
+                document.getElementById('straighten-mark-head').style.outline = 'none';
+            } else if (straightenState.mode === 'tail') {
+                straightenState.tailY = y;
+                document.getElementById('straighten-status').textContent = `Tail marked at row ${y}. Click Apply to save.`;
+                straightenState.mode = null;
+                document.getElementById('straighten-mark-tail').style.outline = 'none';
+            }
+            
+            redrawStraightenCanvas();
+        };
+        
+        document.getElementById('straighten-apply').onclick = async function() {
+            if (straightenState.headY === null || straightenState.tailY === null) {
+                alert('Please mark both head and tail positions');
+                return;
+            }
+            
+            // The straightened image goes from one end to the other along the skeleton
+            // We need to map the Y position back to a skeleton index
+            // For now, we'll store these as relative positions (0-1) along the worm length
+            const headRatio = straightenState.headY / straightenState.height;
+            const tailRatio = straightenState.tailY / straightenState.height;
+            
+            // TODO: Implement backend endpoint to convert straightened positions back to original coordinates
+            // For now, just show a message
+            setStatus(`Head at ${(headRatio * 100).toFixed(0)}%, Tail at ${(tailRatio * 100).toFixed(0)}% along skeleton`);
+            
+            document.getElementById('straighten-modal').classList.remove('show');
+            straightenState.wormId = null;
+            straightenState.imageData = null;
+        };
+
+        // Skeleton toggle button
+        document.getElementById('show-skeleton').onclick = function() {
+            state.showSkeleton = !state.showSkeleton;
+            this.textContent = state.showSkeleton ? '🦴 Hide Skeleton' : '🦴 Show Skeleton';
+            this.style.background = state.showSkeleton ? '#4ecca3' : '';
+            drawAnnotations();
+        };
+        
+        // Draw mode toggle (box vs line for head/tail)
+        document.getElementById('draw-box-mode').onclick = function() {
+            state.drawMode = 'box';
+            this.classList.add('active');
+            document.getElementById('draw-line-mode').classList.remove('active');
+            setStatus('Draw mode: Box');
+        };
+        
+        document.getElementById('draw-line-mode').onclick = function() {
+            state.drawMode = 'line';
+            this.classList.add('active');
+            document.getElementById('draw-box-mode').classList.remove('active');
+            setStatus('Draw mode: Line');
+        };
+        
+        // Navigation
+        document.getElementById('prev-btn').onclick = async () => {
+            showLoading('Loading...');
+            try {
+                clearMaskCache();  // Clear cached masks when navigating
+                const result = await api('/navigate/prev', { method: 'POST' });
+                if (result.image) {
+                    state.annotations = result.annotations;
+                    state.currentWormId = state.annotations[0]?.worm_id || null;
+                    drawFrame(result.image);
+                    updateAnnotationTree();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            hideLoading();
+        };
+        
+        document.getElementById('next-btn').onclick = async () => {
+            showLoading('Loading...');
+            try {
+                clearMaskCache();  // Clear cached masks when navigating
+                const result = await api('/navigate/next', { method: 'POST' });
+                if (result.image) {
+                    state.annotations = result.annotations;
+                    state.currentWormId = state.annotations[0]?.worm_id || null;
+                    drawFrame(result.image);
+                    updateAnnotationTree();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            hideLoading();
+        };
+        
+        // Save
+        document.getElementById('save-btn').onclick = async () => {
+            try {
+                await api('/save', { method: 'POST' });
+                state.hasUnsavedChanges = false;
+                setStatus('Saved!');
+            } catch (e) {
+                alert('Error saving: ' + e.message);
+            }
+        };
+        
+        // Export
+        document.getElementById('export-btn').onclick = async () => {
+            try {
+                setStatus('Exporting to Excel...');
+                const token = getAuthToken();
+                const headers = token ? { 'X-Auth-Token': token } : {};
+                
+                const response = await fetch('/api/export/excel', {
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Export failed');
+                }
+                
+                // Download the file
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // Get filename from Content-Disposition header or use default
+                const disposition = response.headers.get('content-disposition');
+                let filename = 'worm_annotations.xlsx';
+                if (disposition) {
+                    const match = disposition.match(/filename=([^;]+)/);
+                    if (match) {
+                        filename = match[1].replace(/"/g, '');
+                    }
+                }
+                
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                setStatus('Exported to ' + filename);
+            } catch (e) {
+                alert('Error exporting: ' + e.message);
+                setStatus('Export failed');
+            }
+        };
+        
+        // Confidence slider
+        document.getElementById('confidence-slider').oninput = (e) => {
+            const value = e.target.value;
+            document.getElementById('confidence-value').textContent = value + '%';
+            state.confidenceThreshold = value / 100;
+        };
+        
+        document.getElementById('confidence-slider').onchange = async (e) => {
+            const value = e.target.value / 100;
+            try {
+                await api('/settings/confidence', {
+                    method: 'POST',
+                    body: JSON.stringify({ confidence: value })
+                });
+                setStatus(`Confidence threshold set to ${(value * 100).toFixed(0)}%`);
+            } catch (e) {
+                console.error('Error setting confidence:', e);
+            }
+        };
+        
+        // Zoom controls
+        document.getElementById('zoom-in').onclick = () => {
+            state.zoom = Math.min(5, state.zoom + 0.25);
+            updateZoom();
+        };
+        
+        document.getElementById('zoom-out').onclick = () => {
+            state.zoom = Math.max(0.25, state.zoom - 0.25);
+            updateZoom();
+        };
+        
+        document.getElementById('zoom-fit').onclick = () => {
+            state.zoom = 1;
+            updateZoom();
+        };
+        
+        // Show/Hide controls
+        ['detections', 'heads', 'tails', 'masks'].forEach(type => {
+            const btn = document.getElementById(`show-${type}`);
+            const stateKey = `show${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            btn.onclick = () => {
+                state[stateKey] = !state[stateKey];
+                btn.classList.toggle('active', state[stateKey]);
+                drawAnnotations();
+            };
+        });
+        
+        document.getElementById('show-all-btn').onclick = () => {
+            state.showSelectedOnly = false;
+            drawAnnotations();
+            setStatus('Showing all annotations');
+        };
+        
+        document.getElementById('show-selected-btn').onclick = () => {
+            if (state.currentWormId === null) {
+                alert('Please select a worm first');
+                return;
+            }
+            state.showSelectedOnly = true;
+            drawAnnotations();
+            setStatus(`Showing only Worm ${displayWormId(state.currentWormId)}`);
+        };
+        
+        // Load videos list from server
+        async function loadVideos() {
+            try {
+                const result = await api('/videos');
+                const list = document.getElementById('video-list');
+                
+                if (result.videos && result.videos.length > 0) {
+                    list.innerHTML = result.videos.map((video, idx) => 
+                        `<li onclick="selectVideo(${video.index})" class="${video.is_current ? 'active' : ''}">${video.name}</li>`
+                    ).join('');
+                    
+                    // Load current frame
+                    await loadCurrentFrame();
+                } else {
+                    list.innerHTML = '<li style="color: #666;">No videos found</li>';
+                }
+            } catch (e) {
+                console.error('Error loading videos:', e);
+            }
+        }
+        
+        // Helper function to convert mouse event to image coordinates
+        function getImageCoordinates(e) {
+            const canvas = document.getElementById('annotation-canvas');
+            const rect = canvas.getBoundingClientRect();
+            
+            // Mouse position relative to the canvas element
+            const visualX = e.clientX - rect.left;
+            const visualY = e.clientY - rect.top;
+            
+            // The canvas is scaled by CSS transform (zoom)
+            // getBoundingClientRect gives the visual (zoomed) size
+            // canvas.width/height give the actual pixel size
+            // We need to convert from visual to actual coordinates
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = visualX * scaleX;
+            const y = visualY * scaleY;
+            
+            // Debug: uncomment to see coordinate mapping
+            // console.log(`Mouse: (${e.clientX}, ${e.clientY}), Rect: (${rect.left}, ${rect.top}), Visual: (${visualX.toFixed(1)}, ${visualY.toFixed(1)}), Scale: (${scaleX.toFixed(3)}, ${scaleY.toFixed(3)}), Image: (${x.toFixed(1)}, ${y.toFixed(1)})`);
+            
+            return { x, y };
+        }
+        
+        // Helper: find box and handle at coordinates
+        function findBoxAtPoint(coords) {
+            // Scale handle size inversely with zoom so it stays consistent on screen
+            const HANDLE_SIZE = 12 / state.zoom;
+            
+            // Check selected worm's boxes first (priority for editing)
+            if (state.currentWormId !== null) {
+                const annot = state.annotations.find(a => a.worm_id === state.currentWormId);
+                if (annot) {
+                    // Check head box
+                    if (annot.head_box) {
+                        const handle = getBoxHandle(annot.head_box, coords, HANDLE_SIZE);
+                        if (handle) return { wormId: annot.worm_id, boxType: 'head', handle, box: annot.head_box };
+                    }
+                    // Check tail box
+                    if (annot.tail_box) {
+                        const handle = getBoxHandle(annot.tail_box, coords, HANDLE_SIZE);
+                        if (handle) return { wormId: annot.worm_id, boxType: 'tail', handle, box: annot.tail_box };
+                    }
+                    // Check detection box
+                    if (annot.detection_box) {
+                        const handle = getBoxHandle(annot.detection_box, coords, HANDLE_SIZE);
+                        if (handle) return { wormId: annot.worm_id, boxType: 'detection', handle, box: annot.detection_box };
+                    }
+                }
+            }
+            
+            // Check all annotations for selection
+            for (const annot of state.annotations) {
+                if (annot.detection_box) {
+                    const [x1, y1, x2, y2] = annot.detection_box;
+                    if (coords.x >= x1 && coords.x <= x2 && coords.y >= y1 && coords.y <= y2) {
+                        return { wormId: annot.worm_id, boxType: 'detection', handle: 'inside', box: annot.detection_box };
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // Helper: determine which handle (corner, edge, or inside) is at point
+        function getBoxHandle(box, coords, handleSize) {
+            const [x1, y1, x2, y2] = box;
+            const x = coords.x, y = coords.y;
+            
+            // Check corners first (priority)
+            if (Math.abs(x - x1) < handleSize && Math.abs(y - y1) < handleSize) return 'nw';
+            if (Math.abs(x - x2) < handleSize && Math.abs(y - y1) < handleSize) return 'ne';
+            if (Math.abs(x - x1) < handleSize && Math.abs(y - y2) < handleSize) return 'sw';
+            if (Math.abs(x - x2) < handleSize && Math.abs(y - y2) < handleSize) return 'se';
+            
+            // Check edges
+            if (x >= x1 && x <= x2) {
+                if (Math.abs(y - y1) < handleSize) return 'n';
+                if (Math.abs(y - y2) < handleSize) return 's';
+            }
+            if (y >= y1 && y <= y2) {
+                if (Math.abs(x - x1) < handleSize) return 'w';
+                if (Math.abs(x - x2) < handleSize) return 'e';
+            }
+            
+            // Check inside
+            if (x >= x1 && x <= x2 && y >= y1 && y <= y2) return 'inside';
+            
+            return null;
+        }
+        
+        // Helper: apply edit to box based on handle and delta
+        function applyBoxEdit(originalBox, handle, dx, dy) {
+            let [x1, y1, x2, y2] = [...originalBox];
+            
+            switch (handle) {
+                case 'nw': x1 += dx; y1 += dy; break;
+                case 'ne': x2 += dx; y1 += dy; break;
+                case 'sw': x1 += dx; y2 += dy; break;
+                case 'se': x2 += dx; y2 += dy; break;
+                case 'n': y1 += dy; break;
+                case 's': y2 += dy; break;
+                case 'w': x1 += dx; break;
+                case 'e': x2 += dx; break;
+                case 'inside': x1 += dx; y1 += dy; x2 += dx; y2 += dy; break;
+            }
+            
+            // Ensure valid box (min size, correct order)
+            if (x2 - x1 < 10) { x2 = x1 + 10; }
+            if (y2 - y1 < 10) { y2 = y1 + 10; }
+            
+            return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
+        }
+        
+        // Set cursor based on handle
+        function setCursorForHandle(handle) {
+            const cursors = {
+                'nw': 'nw-resize', 'ne': 'ne-resize', 'sw': 'sw-resize', 'se': 'se-resize',
+                'n': 'n-resize', 's': 's-resize', 'w': 'w-resize', 'e': 'e-resize',
+                'inside': 'move'
+            };
+            annotCanvas.style.cursor = cursors[handle] || 'crosshair';
+        }
+        
+        // Canvas mouse events for drawing and editing boxes
+        annotCanvas.onmousedown = (e) => {
+            const coords = getImageCoordinates(e);
+            
+            // Handle brush mode
+            if (state.mode === 'brush-add' || state.mode === 'brush-remove') {
+                state.isBrushing = true;
+                const isAdd = state.mode === 'brush-add';
+                state.brushStrokes.push({ x: Math.round(coords.x), y: Math.round(coords.y), add: isAdd });
+                drawBrushStroke(coords.x, coords.y, isAdd);
+                return;
+            }
+            
+            // In select mode, check for box editing or selection
+            if (state.mode === 'select') {
+                const hit = findBoxAtPoint(coords);
+                if (hit) {
+                    if (hit.wormId !== state.currentWormId) {
+                        // Select the worm first
+                        selectWorm(hit.wormId);
+                    }
+                    // Start editing the box
+                    state.editingBox = { wormId: hit.wormId, boxType: hit.boxType, handle: hit.handle };
+                    state.dragStart = coords;
+                    state.originalBox = [...hit.box];
+                    setCursorForHandle(hit.handle);
+                    setStatus(`Editing ${hit.boxType} box - drag to ${hit.handle === 'inside' ? 'move' : 'resize'}`);
+                    return;
+                }
+                return;
+            }
+            
+            // For head/tail modes, require worm selection
+            if ((state.mode === 'head' || state.mode === 'tail') && state.currentWormId === null) {
+                alert('Please select a worm first');
+                return;
+            }
+            
+            state.drawing = true;
+            state.startPoint = coords;
+        };
+        
+        annotCanvas.onmousemove = (e) => {
+            const coords = getImageCoordinates(e);
+            
+            // Handle brush mode
+            if ((state.mode === 'brush-add' || state.mode === 'brush-remove') && state.isBrushing) {
+                const isAdd = state.mode === 'brush-add';
+                state.brushStrokes.push({ x: Math.round(coords.x), y: Math.round(coords.y), add: isAdd });
+                drawBrushStroke(coords.x, coords.y, isAdd);
+                return;
+            }
+            
+            // Handle box editing drag - use fast drawing
+            if (state.editingBox && state.dragStart) {
+                const dx = coords.x - state.dragStart.x;
+                const dy = coords.y - state.dragStart.y;
+                
+                // Calculate new box
+                const newBox = applyBoxEdit(state.originalBox, state.editingBox.handle, dx, dy);
+                
+                // Update the annotation locally for preview
+                const annot = state.annotations.find(a => a.worm_id === state.editingBox.wormId);
+                if (annot) {
+                    if (state.editingBox.boxType === 'detection') annot.detection_box = newBox;
+                    else if (state.editingBox.boxType === 'head') annot.head_box = newBox;
+                    else if (state.editingBox.boxType === 'tail') annot.tail_box = newBox;
+                }
+                
+                // Use fast box-only drawing during drag
+                drawBoxesOnly();
+                return;
+            }
+            
+            // Update cursor in select mode
+            if (state.mode === 'select' && !state.drawing) {
+                const hit = findBoxAtPoint(coords);
+                if (hit && hit.wormId === state.currentWormId) {
+                    setCursorForHandle(hit.handle);
+                } else if (hit) {
+                    annotCanvas.style.cursor = 'pointer';
+                } else {
+                    annotCanvas.style.cursor = 'default';
+                }
+                return;
+            }
+            
+            // Handle drawing new box or line
+            if (!state.drawing || !state.startPoint) return;
+            
+            // Use fast drawing during drag
+            drawBoxesOnly();
+            
+            // Draw line or box depending on mode
+            if ((state.mode === 'head' || state.mode === 'tail') && state.drawMode === 'line') {
+                drawTempLine(state.startPoint.x, state.startPoint.y, coords.x, coords.y);
+            } else {
+                drawTempBox(
+                    Math.min(state.startPoint.x, coords.x),
+                    Math.min(state.startPoint.y, coords.y),
+                    Math.max(state.startPoint.x, coords.x),
+                    Math.max(state.startPoint.y, coords.y)
+                );
+            }
+        };
+        
+        annotCanvas.onmouseup = async (e) => {
+            const coords = getImageCoordinates(e);
+            
+            // Handle brush mode release
+            if (state.mode === 'brush-add' || state.mode === 'brush-remove') {
+                state.isBrushing = false;
+                setStatus(`${state.brushStrokes.length} brush strokes pending - click Apply to save`);
+                return;
+            }
+            
+            // Handle box editing release
+            if (state.editingBox && state.dragStart) {
+                const dx = coords.x - state.dragStart.x;
+                const dy = coords.y - state.dragStart.y;
+                
+                // Only save if actually moved
+                if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+                    const newBox = applyBoxEdit(state.originalBox, state.editingBox.handle, dx, dy);
+                    
+                    // Store values before async operations
+                    const editWormId = state.editingBox.wormId;
+                    const editBoxType = state.editingBox.boxType;
+                    
+                    // Update local annotation immediately
+                    const annot = state.annotations.find(a => a.worm_id === editWormId);
+                    if (annot) {
+                        if (editBoxType === 'detection') annot.detection_box = newBox;
+                        else if (editBoxType === 'head') annot.head_box = newBox;
+                        else if (editBoxType === 'tail') annot.tail_box = newBox;
+                    }
+                    
+                    // Clear editing state first
+                    state.editingBox = null;
+                    state.dragStart = null;
+                    state.originalBox = null;
+                    annotCanvas.style.cursor = 'default';
+                    
+                    // Redraw with full annotations
+                    drawAnnotations();
+                    updateAnnotationTree();
+                    
+                    try {
+                        // Save to server in background
+                        const boxData = {
+                            x1: newBox[0], y1: newBox[1], x2: newBox[2], y2: newBox[3],
+                            worm_id: editWormId,
+                            box_type: editBoxType
+                        };
+                        
+                        let endpoint;
+                        if (editBoxType === 'head') {
+                            endpoint = '/annotation/head';
+                        } else if (editBoxType === 'tail') {
+                            endpoint = '/annotation/tail';
+                        } else if (editBoxType === 'detection') {
+                            endpoint = '/annotation/detection';
+                        } else {
+                            setStatus(`Updated ${editBoxType} box (unsaved)`);
+                            state.hasUnsavedChanges = true;
+                            return;
+                        }
+                        
+                        await api(endpoint, {
+                            method: 'POST',
+                            body: JSON.stringify(boxData)
+                        });
+                        
+                        state.hasUnsavedChanges = true;
+                        setStatus(`Updated ${editBoxType} box`);
+                    } catch (err) {
+                        alert('Error saving box: ' + err.message);
+                        // Reload to get correct state from server
+                        await loadCurrentFrame();
+                    }
+                    return;
+                }
+                
+                state.editingBox = null;
+                state.dragStart = null;
+                state.originalBox = null;
+                annotCanvas.style.cursor = 'default';
+                return;
+            }
+            
+            // Handle drawing new box or line
+            if (!state.drawing || !state.startPoint) return;
+            
+            state.drawing = false;
+            const endCoords = coords;
+            
+            // Determine if we're drawing a line
+            const isLineMode = (state.mode === 'head' || state.mode === 'tail') && state.drawMode === 'line';
+            
+            if (isLineMode) {
+                // Line mode - save line coordinates directly (start to end)
+                const lineData = {
+                    x1: state.startPoint.x,
+                    y1: state.startPoint.y,
+                    x2: endCoords.x,
+                    y2: endCoords.y,
+                    worm_id: state.currentWormId,
+                    box_type: state.mode
+                };
+                
+                // Check minimum length for line
+                const lineLength = Math.sqrt(
+                    Math.pow(endCoords.x - state.startPoint.x, 2) + 
+                    Math.pow(endCoords.y - state.startPoint.y, 2)
+                );
+                if (lineLength < 10) {
+                    drawAnnotations();
+                    state.startPoint = null;
+                    return;
+                }
+                
+                // Save the line
+                try {
+                    const endpoint = state.mode === 'head' ? '/annotation/head-line' : '/annotation/tail-line';
+                    
+                    const result = await api(endpoint, {
+                        method: 'POST',
+                        body: JSON.stringify(lineData)
+                    });
+                    
+                    state.hasUnsavedChanges = true;
+                    await loadCurrentFrame();
+                    
+                    if (state.mode === 'head') {
+                        // Auto-advance to tail mode
+                        document.getElementById('tail-mode').click();
+                    } else if (state.mode === 'tail') {
+                        // Return to select mode
+                        document.getElementById('select-mode').click();
+                    }
+                } catch (e) {
+                    alert('Error saving line: ' + e.message);
+                }
+                
+                state.startPoint = null;
+                return;
+            }
+            
+            // Box mode
+            const box = {
+                x1: Math.min(state.startPoint.x, endCoords.x),
+                y1: Math.min(state.startPoint.y, endCoords.y),
+                x2: Math.max(state.startPoint.x, endCoords.x),
+                y2: Math.max(state.startPoint.y, endCoords.y),
+                worm_id: state.currentWormId,
+                box_type: state.mode
+            };
+            
+            // Check minimum size
+            if (box.x2 - box.x1 < 10 || box.y2 - box.y1 < 10) {
+                drawAnnotations();
+                state.startPoint = null;
+                return;
+            }
+            
+            // Save the box
+            try {
+                let endpoint;
+                if (state.mode === 'worm') {
+                    endpoint = '/annotation/worm';
+                    delete box.worm_id;  // New worm, no ID yet
+                } else if (state.mode === 'head') {
+                    endpoint = '/annotation/head';
+                } else {
+                    endpoint = '/annotation/tail';
+                }
+                
+                const result = await api(endpoint, {
+                    method: 'POST',
+                    body: JSON.stringify(box)
+                });
+                
+                state.hasUnsavedChanges = true;
+                await loadCurrentFrame();
+                
+                // For worm mode, select the newly created worm
+                if (state.mode === 'worm' && result.worm_id !== undefined) {
+                    selectWorm(result.worm_id);
+                    setStatus(`Added Worm ${displayWormId(result.worm_id)} - Select Segment to segment`);
+                    // Switch to select mode after adding worm
+                    document.getElementById('select-mode').click();
+                } else if (state.mode === 'head') {
+                    // Auto-advance to tail mode
+                    document.getElementById('tail-mode').click();
+                } else if (state.mode === 'tail') {
+                    // Return to select mode
+                    document.getElementById('select-mode').click();
+                }
+            } catch (e) {
+                alert('Error saving box: ' + e.message);
+            }
+            
+            state.startPoint = null;
+        };
+        
+        // Context menu for right-click actions on boxes/masks
+        function showContextMenu(e, wormId, items) {
+            e.preventDefault();
+            const menu = document.getElementById('context-menu');
+            const title = document.getElementById('context-menu-title');
+            const itemsContainer = document.getElementById('context-menu-items');
+            
+            title.textContent = `Worm ${displayWormId(wormId)}`;
+            itemsContainer.innerHTML = items.map(item => 
+                `<div onclick="${item.action}" style="padding:8px 12px; cursor:pointer; color:#eee; font-size:13px;" 
+                      onmouseover="this.style.background='#0f3460'" onmouseout="this.style.background='transparent'">
+                    ${item.icon} ${item.label}
+                </div>`
+            ).join('');
+            
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.style.display = 'block';
+        }
+        
+        function hideContextMenu() {
+            document.getElementById('context-menu').style.display = 'none';
+        }
+        
+        // Hide context menu on click elsewhere
+        document.addEventListener('click', hideContextMenu);
+        
+        // Right-click handler for context menu
+        annotCanvas.oncontextmenu = (e) => {
+            e.preventDefault();
+            const coords = getImageCoordinates(e);
+            
+            // Find what was clicked
+            const hit = findBoxAtPoint(coords);
+            if (hit) {
+                const annot = state.annotations.find(a => a.worm_id === hit.wormId);
+                if (!annot) return;
+                
+                const items = [];
+                
+                // Box-specific actions
+                if (hit.boxType === 'detection') {
+                    items.push({ icon: '✂️', label: annot.has_worm_mask ? 'Re-segment Worm' : 'Segment Worm', 
+                                 action: `hideContextMenu(); ${annot.has_worm_mask ? 'resegmentMask' : 'segmentBox'}(${hit.wormId}, 'worm')` });
+                    if (annot.has_worm_mask) {
+                        items.push({ icon: '🗑️', label: 'Delete Worm Mask', action: `hideContextMenu(); clearMask(${hit.wormId}, 'worm')` });
+                    }
+                } else if (hit.boxType === 'head') {
+                    items.push({ icon: '✏️', label: 'Redraw Head Box', action: `hideContextMenu(); editHead(${hit.wormId})` });
+                    items.push({ icon: '✂️', label: annot.has_head_mask ? 'Re-segment Head' : 'Segment Head', 
+                                 action: `hideContextMenu(); ${annot.has_head_mask ? 'resegmentMask' : 'segmentBox'}(${hit.wormId}, 'head')` });
+                    if (annot.has_head_mask) {
+                        items.push({ icon: '🗑️', label: 'Delete Head Mask', action: `hideContextMenu(); clearMask(${hit.wormId}, 'head')` });
+                    }
+                    items.push({ icon: '❌', label: 'Delete Head Box', action: `hideContextMenu(); clearBox(${hit.wormId}, 'head')` });
+                } else if (hit.boxType === 'tail') {
+                    items.push({ icon: '✏️', label: 'Redraw Tail Box', action: `hideContextMenu(); editTail(${hit.wormId})` });
+                    items.push({ icon: '✂️', label: annot.has_tail_mask ? 'Re-segment Tail' : 'Segment Tail', 
+                                 action: `hideContextMenu(); ${annot.has_tail_mask ? 'resegmentMask' : 'segmentBox'}(${hit.wormId}, 'tail')` });
+                    if (annot.has_tail_mask) {
+                        items.push({ icon: '🗑️', label: 'Delete Tail Mask', action: `hideContextMenu(); clearMask(${hit.wormId}, 'tail')` });
+                    }
+                    items.push({ icon: '❌', label: 'Delete Tail Box', action: `hideContextMenu(); clearBox(${hit.wormId}, 'tail')` });
+                }
+                
+                // Common actions
+                items.push({ icon: '───', label: '', action: '' }); // Separator
+                if (annot.has_worm_mask) {
+                    items.push({ icon: '📐', label: 'Straightened View', action: `hideContextMenu(); openStraightenModal(${hit.wormId})` });
+                }
+                items.push({ icon: '🚫', label: annot.censored ? 'Uncensor Worm' : 'Censor Worm', action: `hideContextMenu(); toggleCensor(${hit.wormId})` });
+                items.push({ icon: '🗑️', label: 'Delete Worm', action: `hideContextMenu(); deleteWorm(${hit.wormId})` });
+                
+                selectWorm(hit.wormId);
+                showContextMenu(e, hit.wormId, items.filter(i => i.label)); // Filter out separator
+            }
+        };
+        
+        // Keyboard shortcuts
+        document.onkeydown = (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    document.getElementById('prev-btn').click();
+                    break;
+                case 'ArrowRight':
+                    document.getElementById('next-btn').click();
+                    break;
+                case 'd':
+                    document.getElementById('detect-btn').click();
+                    break;
+                case 'w':
+                    document.getElementById('worm-mode').click();
+                    break;
+                case 's':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        document.getElementById('save-btn').click();
+                    } else {
+                        document.getElementById('select-mode').click();
+                    }
+                    break;
+                case 'h':
+                    document.getElementById('head-mode').click();
+                    break;
+                case 't':
+                    document.getElementById('tail-mode').click();
+                    break;
+                case 'l':
+                    // Toggle between line and box draw mode
+                    if (state.drawMode === 'box') {
+                        document.getElementById('draw-line-mode').click();
+                    } else {
+                        document.getElementById('draw-box-mode').click();
+                    }
+                    break;
+                case 'b':
+                    if (e.shiftKey) {
+                        document.getElementById('brush-remove-mode').click();
+                    } else {
+                        document.getElementById('brush-add-mode').click();
+                    }
+                    break;
+                case '[':
+                    // Decrease brush size
+                    state.brushSize = Math.max(3, state.brushSize - 3);
+                    document.getElementById('brush-size').value = state.brushSize;
+                    document.getElementById('brush-size-value').textContent = state.brushSize;
+                    break;
+                case ']':
+                    // Increase brush size
+                    state.brushSize = Math.min(50, state.brushSize + 3);
+                    document.getElementById('brush-size').value = state.brushSize;
+                    document.getElementById('brush-size-value').textContent = state.brushSize;
+                    break;
+                case '?':
+                    document.getElementById('help-modal').classList.toggle('show');
+                    break;
+                case '+':
+                case '=':
+                    document.getElementById('zoom-in').click();
+                    break;
+                case '-':
+                    document.getElementById('zoom-out').click();
+                    break;
+                case 'Delete':
+                case 'Backspace':
+                    if (state.currentWormId !== null) {
+                        deleteSelectedWorm();
+                    }
+                    break;
+                case 'Escape':
+                    // Cancel brush mode
+                    if (state.mode === 'brush-add' || state.mode === 'brush-remove') {
+                        document.getElementById('brush-cancel').click();
+                    }
+                    // Close modals
+                    document.getElementById('help-modal').classList.remove('show');
+                    document.getElementById('folder-modal').classList.remove('show');
+                    break;
+            }
+        };
+        
+        // Unsaved changes warning
+        window.onbeforeunload = (e) => {
+            if (state.hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        };
+        
+        // Initial setup
+        (async () => {
+            // Load user info first
+            await loadUserInfo();
+            
+            // Load settings
+            try {
+                const settings = await api('/settings');
+                if (settings.confidence_threshold) {
+                    state.confidenceThreshold = settings.confidence_threshold;
+                    document.getElementById('confidence-slider').value = settings.confidence_threshold * 100;
+                    document.getElementById('confidence-value').textContent = Math.round(settings.confidence_threshold * 100) + '%';
+                }
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+            
+            // Set default mode to Add Worm
+            document.getElementById('worm-mode').click();
+            
+            // Then check status and auto-load if dataset is available
+            try {
+                const status = await api('/status');
+                if (status.models_loaded) {
+                    if (status.folder_loaded) {
+                        // Dataset already loaded - load the video list and current frame
+                        setStatus('Loading dataset...');
+                        await loadVideos();
+                        
+                        // Show folder path
+                        if (status.folder_path) {
+                            document.getElementById('current-folder-path').textContent = status.folder_path;
+                            document.getElementById('current-folder').style.display = 'block';
+                        }
+                        
+                        setStatus('Dataset loaded - Ready to annotate');
+                    } else {
+                        setStatus('Models loaded - Open a folder to start');
+                    }
+                } else {
+                    setStatus('Loading models...');
+                }
+            } catch (e) {
+                if (e.message !== 'Not authenticated') {
+                    setStatus('Connecting to server...');
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

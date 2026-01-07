@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Worm Annotation Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: rgba(22, 33, 62, 0.95);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            font-size: 64px;
+            margin-bottom: 10px;
+        }
+        
+        .logo h1 {
+            color: #e94560;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .logo p {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #aaa;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0f3460;
+            border: 2px solid #1a4a7a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #e94560;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.2);
+        }
+        
+        .form-group input::placeholder {
+            color: #555;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff4444;
+            color: #ff6b6b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #555;
+            font-size: 12px;
+        }
+        
+        .footer a {
+            color: #e94560;
+            text-decoration: none;
+        }
+        
+        /* Remember me checkbox */
+        .remember-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #e94560;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+        }
+        
+        .btn-login.loading .spinner {
+            display: inline-block;
+        }
+        
+        .btn-login.loading .btn-text {
+            opacity: 0.7;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Animate entrance */
+        .login-container {
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">🪱</div>
+            <h1>Worm Annotation Tool</h1>
+            <p>Sign in to continue</p>
+        </div>
+        
+        <div class="error-message" id="error-message"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" 
+                       placeholder="Enter your username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" 
+                       placeholder="Enter your password" required>
+            </div>
+            
+            <div class="remember-row">
+                <label class="remember-me">
+                    <input type="checkbox" id="remember" checked>
+                    Remember me
+                </label>
+            </div>
+            
+            <button type="submit" class="btn-login" id="login-btn">
+                <span class="spinner"></span>
+                <span class="btn-text">Sign In</span>
+            </button>
+        </form>
+        
+        <div class="footer">
+            <p>Default: admin / wormadmin123</p>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('login-form');
+        const errorDiv = document.getElementById('error-message');
+        const loginBtn = document.getElementById('login-btn');
+        
+        // Check if already logged in
+        (async () => {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    // Already logged in, redirect to app
+                    window.location.href = '/app';
+                }
+            } catch (e) {
+                // Not logged in, stay on login page
+            }
+        })();
+        
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            
+            // Show loading state
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+            errorDiv.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, remember }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Store token in localStorage for API calls
+                    if (data.token) {
+                        localStorage.setItem('auth_token', data.token);
+                        // Redirect with token in URL (for browsers that don't send cookies)
+                        window.location.href = '/app?token=' + encodeURIComponent(data.token);
+                    } else {
+                        window.location.href = '/app';
+                    }
+                } else {
+                    // Show error
+                    errorDiv.textContent = data.detail || 'Invalid username or password';
+                    errorDiv.classList.add('show');
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Connection error. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                loginBtn.classList.remove('loading');
+                loginBtn.disabled = false;
+            }
+        };
+        
+        // Clear error on input
+        document.querySelectorAll('input').forEach(input => {
+            input.oninput = () => errorDiv.classList.remove('show');
+        });
+    </script>
+</body>
+</html>
