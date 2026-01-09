@@ -3687,22 +3687,37 @@ async def get_tile_frame_image(
             if show_mask:
                 mask_overlay = frame.copy()
                 for worm_id, annot in video_annots.annotations.items():
+                    # Draw head mask (yellow/gold)
+                    if annot.head_mask_path and Path(annot.head_mask_path).exists():
+                        head_mask = cv2.imread(annot.head_mask_path, cv2.IMREAD_GRAYSCALE)
+                        if head_mask is not None:
+                            mask_overlay[head_mask > 127] = (0, 215, 255)  # Gold/yellow in BGR
+                    
+                    # Draw tail mask (blue)
+                    if annot.tail_mask_path and Path(annot.tail_mask_path).exists():
+                        tail_mask = cv2.imread(annot.tail_mask_path, cv2.IMREAD_GRAYSCALE)
+                        if tail_mask is not None:
+                            mask_overlay[tail_mask > 127] = (255, 0, 0)  # Blue in BGR
+                    
+                    # Draw worm body mask (green/health-based)
                     if annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
                         mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
                         if mask is not None:
-                            # Color based on health class
+                            # Color based on health class (A-E)
                             color = (0, 255, 0)  # Default green BGR
-                            if annot.health_class == "Healthy":
+                            if annot.health_class == 'A':
                                 color = (0, 255, 0)  # Green
-                            elif annot.health_class == "Slightly Unhealthy":
+                            elif annot.health_class == 'B':
+                                color = (0, 255, 136)  # Light green
+                            elif annot.health_class == 'C':
                                 color = (0, 255, 255)  # Yellow
-                            elif annot.health_class == "Unhealthy":
+                            elif annot.health_class == 'D':
                                 color = (0, 165, 255)  # Orange
-                            elif annot.health_class == "Very Unhealthy":
+                            elif annot.health_class == 'E':
                                 color = (0, 0, 255)  # Red
                             
                             if annot.censored:
-                                color = (128, 128, 128)
+                                color = (128, 128, 128)  # Gray
                             
                             # Fill mask area with color
                             mask_overlay[mask > 127] = color
@@ -3716,15 +3731,17 @@ async def get_tile_frame_image(
                 if annot.detection_box:
                     x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
                     
-                    # Color based on health class
+                    # Color based on health class (A-E)
                     color = (0, 255, 0)  # Default green
-                    if annot.health_class == "Healthy":
+                    if annot.health_class == 'A':
                         color = (0, 255, 0)  # Green
-                    elif annot.health_class == "Slightly Unhealthy":
+                    elif annot.health_class == 'B':
+                        color = (0, 255, 136)  # Light green
+                    elif annot.health_class == 'C':
                         color = (0, 255, 255)  # Yellow
-                    elif annot.health_class == "Unhealthy":
+                    elif annot.health_class == 'D':
                         color = (0, 165, 255)  # Orange
-                    elif annot.health_class == "Very Unhealthy":
+                    elif annot.health_class == 'E':
                         color = (0, 0, 255)  # Red
                     
                     # Make censored worms gray
@@ -4236,22 +4253,37 @@ async def get_batch_frame_images(
                     if request.show_mask:
                         mask_overlay = frame.copy()
                         for worm_id, annot in video_annots.annotations.items():
+                            # Draw head mask (yellow/gold)
+                            if annot.head_mask_path and Path(annot.head_mask_path).exists():
+                                head_mask = cv2.imread(annot.head_mask_path, cv2.IMREAD_GRAYSCALE)
+                                if head_mask is not None:
+                                    mask_overlay[head_mask > 127] = (0, 215, 255)  # Gold/yellow in BGR
+                            
+                            # Draw tail mask (blue)
+                            if annot.tail_mask_path and Path(annot.tail_mask_path).exists():
+                                tail_mask = cv2.imread(annot.tail_mask_path, cv2.IMREAD_GRAYSCALE)
+                                if tail_mask is not None:
+                                    mask_overlay[tail_mask > 127] = (255, 0, 0)  # Blue in BGR
+                            
+                            # Draw worm body mask (green/health-based)
                             if annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
                                 mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
                                 if mask is not None:
-                                    # Color based on health class
+                                    # Color based on health class (A-E)
                                     color = (0, 255, 0)  # Default green BGR
-                                    if annot.health_class == "Healthy":
+                                    if annot.health_class == 'A':
                                         color = (0, 255, 0)  # Green
-                                    elif annot.health_class == "Slightly Unhealthy":
+                                    elif annot.health_class == 'B':
+                                        color = (0, 255, 136)  # Light green
+                                    elif annot.health_class == 'C':
                                         color = (0, 255, 255)  # Yellow
-                                    elif annot.health_class == "Unhealthy":
+                                    elif annot.health_class == 'D':
                                         color = (0, 165, 255)  # Orange
-                                    elif annot.health_class == "Very Unhealthy":
+                                    elif annot.health_class == 'E':
                                         color = (0, 0, 255)  # Red
                                     
                                     if annot.censored:
-                                        color = (128, 128, 128)
+                                        color = (128, 128, 128)  # Gray
                                     
                                     # Fill mask area with color
                                     mask_overlay[mask > 127] = color
@@ -4265,15 +4297,18 @@ async def get_batch_frame_images(
                             if annot.detection_box:
                                 x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
                                 
-                                color = (0, 255, 0)
-                                if annot.health_class == "Healthy":
-                                    color = (0, 255, 0)
-                                elif annot.health_class == "Slightly Unhealthy":
-                                    color = (0, 255, 255)
-                                elif annot.health_class == "Unhealthy":
-                                    color = (0, 165, 255)
-                                elif annot.health_class == "Very Unhealthy":
-                                    color = (0, 0, 255)
+                                # Color based on health class (A-E)
+                                color = (0, 255, 0)  # Default green
+                                if annot.health_class == 'A':
+                                    color = (0, 255, 0)  # Green
+                                elif annot.health_class == 'B':
+                                    color = (0, 255, 136)  # Light green
+                                elif annot.health_class == 'C':
+                                    color = (0, 255, 255)  # Yellow
+                                elif annot.health_class == 'D':
+                                    color = (0, 165, 255)  # Orange
+                                elif annot.health_class == 'E':
+                                    color = (0, 0, 255)  # Red
                                 
                                 if annot.censored:
                                     color = (128, 128, 128)
@@ -4282,7 +4317,7 @@ async def get_batch_frame_images(
                                 
                                 label_parts = [f"#{worm_id}"]
                                 if annot.health_class:
-                                    label_parts.append(annot.health_class[:1])
+                                    label_parts.append(annot.health_class)
                                 label = " ".join(label_parts)
                                 
                                 (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
