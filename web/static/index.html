@@ -3630,8 +3630,8 @@
             
             tileState.frameImages = [];
             
-            // Load images in batches
-            const batchSize = 4;  // Smaller batches for larger images
+            // Use batch endpoint for better VPN performance
+            const batchSize = 8;  // Optimal batch size for frames
             const totalFrames = tileState.frameData.length;
             
             for (let i = 0; i < totalFrames; i += batchSize) {
@@ -3640,35 +3640,67 @@
                 // Update progress
                 container.innerHTML = `<div style="color: #888; text-align: center; padding: 40px;">Loading frames... ${Math.min(i + batchSize, totalFrames)}/${totalFrames}</div>`;
                 
-                // Load batch in parallel
-                const batchPromises = batch.map(async (frameData) => {
-                    let imageUrl = null;
+                try {
+                    // Use batch endpoint - single request for multiple frames
+                    const videoPaths = batch.map(f => f.video_path);
+                    const result = await api('/tile/batch_frame_images', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            video_paths: videoPaths,
+                            show_annotations: tileState.showAnnotations,
+                            show_mask: tileState.showFrameMask,
+                            quality: 85
+                        })
+                    });
                     
-                    try {
-                        const showAnnotations = tileState.showAnnotations ? 'true' : 'false';
-                        const showMask = tileState.showFrameMask ? 'true' : 'false';
-                        const result = await api(`/tile/frame_image?video_path=${encodeURIComponent(frameData.video_path)}&show_annotations=${showAnnotations}&show_mask=${showMask}`);
-                        if (result.success && result.image) {
-                            imageUrl = 'data:image/png;base64,' + result.image;
+                    // Process batch results
+                    for (const frameData of batch) {
+                        const imgData = result.images?.[frameData.video_path];
+                        let imageUrl = null;
+                        
+                        if (imgData && imgData.image) {
+                            imageUrl = 'data:image/jpeg;base64,' + imgData.image;
                         }
-                    } catch (e) {
-                        console.error(`Error loading frame for ${frameData.video_name}:`, e);
+                        
+                        tileState.frameImages.push({
+                            videoPath: frameData.video_path,
+                            videoName: frameData.video_name,
+                            folderName: frameData.folder_name,
+                            folderIndex: frameData.folder_index,
+                            wormCount: frameData.worm_count,
+                            qcComplete: frameData.qc_complete,
+                            imageUrl: imageUrl,
+                            frameData: frameData
+                        });
                     }
-                    
-                    return {
-                        videoPath: frameData.video_path,
-                        videoName: frameData.video_name,
-                        folderName: frameData.folder_name,
-                        folderIndex: frameData.folder_index,
-                        wormCount: frameData.worm_count,
-                        qcComplete: frameData.qc_complete,
-                        imageUrl: imageUrl,
-                        frameData: frameData
-                    };
-                });
-                
-                const batchResults = await Promise.all(batchPromises);
-                tileState.frameImages.push(...batchResults);
+                } catch (e) {
+                    console.error('Batch frame load error, falling back to individual:', e);
+                    // Fallback to individual requests
+                    for (const frameData of batch) {
+                        let imageUrl = null;
+                        try {
+                            const showAnnotations = tileState.showAnnotations ? 'true' : 'false';
+                            const showMask = tileState.showFrameMask ? 'true' : 'false';
+                            const result = await api(`/tile/frame_image?video_path=${encodeURIComponent(frameData.video_path)}&show_annotations=${showAnnotations}&show_mask=${showMask}`);
+                            if (result.success && result.image) {
+                                imageUrl = 'data:image/jpeg;base64,' + result.image;
+                            }
+                        } catch (err) {
+                            console.error(`Error loading frame for ${frameData.video_name}:`, err);
+                        }
+                        
+                        tileState.frameImages.push({
+                            videoPath: frameData.video_path,
+                            videoName: frameData.video_name,
+                            folderName: frameData.folder_name,
+                            folderIndex: frameData.folder_index,
+                            wormCount: frameData.worm_count,
+                            qcComplete: frameData.qc_complete,
+                            imageUrl: imageUrl,
+                            frameData: frameData
+                        });
+                    }
+                }
             }
             
             tileState.loadingImages = false;
@@ -3684,8 +3716,8 @@
             
             tileState.wormImages = [];
             
-            // Load images in batches for better UX
-            const batchSize = 9;
+            // Use batch endpoint for better VPN performance
+            const batchSize = 16;  // Optimal batch size for worm crops (smaller images)
             const totalWorms = tileState.wormData.length;
             
             for (let i = 0; i < totalWorms; i += batchSize) {
@@ -3694,33 +3726,67 @@
                 // Update progress
                 container.innerHTML = `<div style="color: #888; text-align: center; padding: 40px;">Loading images... ${Math.min(i + batchSize, totalWorms)}/${totalWorms}</div>`;
                 
-                // Load batch in parallel
-                const batchPromises = batch.map(async (wormData) => {
-                    let imageUrl = null;
+                try {
+                    // Use batch endpoint - single request for multiple worms
+                    const wormRequests = batch.map(w => ({
+                        video_path: w.video_path,
+                        worm_id: w.worm_id
+                    }));
                     
-                    try {
-                        // Use the tile-specific endpoint that can load from any video
-                        const showMaskParam = tileState.showMask ? 'true' : 'false';
-                        const result = await api(`/tile/worm_image?video_path=${encodeURIComponent(wormData.video_path)}&worm_id=${wormData.worm_id}&show_type=${tileState.showType}&show_mask=${showMaskParam}`);
-                        if (result.success && result.image) {
-                            imageUrl = 'data:image/png;base64,' + result.image;
+                    const result = await api('/tile/batch_worm_images', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            worms: wormRequests,
+                            show_type: tileState.showType,
+                            show_mask: tileState.showMask,
+                            quality: 85
+                        })
+                    });
+                    
+                    // Process batch results
+                    for (const wormData of batch) {
+                        const key = `${wormData.video_path}:${wormData.worm_id}`;
+                        const imgData = result.images?.[key];
+                        let imageUrl = null;
+                        
+                        if (imgData && imgData.image) {
+                            imageUrl = 'data:image/jpeg;base64,' + imgData.image;
                         }
-                    } catch (e) {
-                        console.error(`Error loading image for worm ${wormData.worm_id}:`, e);
+                        
+                        tileState.wormImages.push({
+                            wormId: wormData.worm_id,
+                            videoPath: wormData.video_path,
+                            videoName: wormData.video_name,
+                            folderName: wormData.folder_name,
+                            imageUrl: imageUrl,
+                            wormData: wormData
+                        });
                     }
-                    
-                    return {
-                        wormId: wormData.worm_id,
-                        videoPath: wormData.video_path,
-                        videoName: wormData.video_name,
-                        folderName: wormData.folder_name,
-                        imageUrl: imageUrl,
-                        wormData: wormData
-                    };
-                });
-                
-                const batchResults = await Promise.all(batchPromises);
-                tileState.wormImages.push(...batchResults);
+                } catch (e) {
+                    console.error('Batch worm load error, falling back to individual:', e);
+                    // Fallback to individual requests
+                    for (const wormData of batch) {
+                        let imageUrl = null;
+                        try {
+                            const showMaskParam = tileState.showMask ? 'true' : 'false';
+                            const result = await api(`/tile/worm_image?video_path=${encodeURIComponent(wormData.video_path)}&worm_id=${wormData.worm_id}&show_type=${tileState.showType}&show_mask=${showMaskParam}`);
+                            if (result.success && result.image) {
+                                imageUrl = 'data:image/jpeg;base64,' + result.image;
+                            }
+                        } catch (err) {
+                            console.error(`Error loading image for worm ${wormData.worm_id}:`, err);
+                        }
+                        
+                        tileState.wormImages.push({
+                            wormId: wormData.worm_id,
+                            videoPath: wormData.video_path,
+                            videoName: wormData.video_name,
+                            folderName: wormData.folder_name,
+                            imageUrl: imageUrl,
+                            wormData: wormData
+                        });
+                    }
+                }
             }
             
             tileState.loadingImages = false;

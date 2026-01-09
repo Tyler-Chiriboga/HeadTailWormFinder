@@ -7,6 +7,8 @@ import sys
 import json
 import base64
 import asyncio
+import hashlib
+import io
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 from contextlib import asynccontextmanager
@@ -442,6 +444,61 @@ def encode_mask_to_base64(mask: np.ndarray) -> str:
     mask_uint8 = (mask * 255).astype(np.uint8)
     _, buffer = cv2.imencode('.png', mask_uint8)
     return base64.b64encode(buffer).decode('utf-8')
+
+
+def encode_image_to_bytes(image: np.ndarray, quality: int = 85) -> bytes:
+    """Encode numpy image to JPEG bytes.
+    
+    Args:
+        image: RGB numpy array
+        quality: JPEG compression quality
+        
+    Returns:
+        JPEG image as bytes
+    """
+    bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    _, buffer = cv2.imencode('.jpg', bgr_image, [cv2.IMWRITE_JPEG_QUALITY, quality])
+    return buffer.tobytes()
+
+
+def compute_etag(data: bytes) -> str:
+    """Compute ETag hash from data."""
+    return hashlib.md5(data).hexdigest()
+
+
+def create_image_response(
+    image_bytes: bytes,
+    request: Request,
+    max_age: int = 3600,
+    content_type: str = "image/jpeg"
+) -> Response:
+    """Create an HTTP response with proper cache headers for images.
+    
+    Args:
+        image_bytes: Raw image bytes
+        request: FastAPI request for ETag comparison
+        max_age: Cache max-age in seconds (default 1 hour)
+        content_type: MIME type of the image
+        
+    Returns:
+        Response with cache headers and ETag support
+    """
+    etag = compute_etag(image_bytes)
+    
+    # Check if client has cached version
+    if_none_match = request.headers.get("if-none-match")
+    if if_none_match and if_none_match == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    
+    return Response(
+        content=image_bytes,
+        media_type=content_type,
+        headers={
+            "ETag": etag,
+            "Cache-Control": f"private, max-age={max_age}",
+            "Vary": "Accept-Encoding"
+        }
+    )
 
 
 def compute_mask_statistics(mask: np.ndarray) -> Dict[str, Any]:
@@ -3329,6 +3386,453 @@ async def get_tile_frame_image(
         "image": img_b64,
         "width": w,
         "height": h
+    }
+
+
+# =============================================================================
+# OPTIMIZED IMAGE ENDPOINTS - Binary streaming with cache headers
+# =============================================================================
+
+@app.get("/api/tile/worm_image_binary")
+async def get_worm_image_binary(
+    request: Request,
+    video_path: str,
+    worm_id: int,
+    show_type: str = "crop",
+    show_mask: bool = True,
+    quality: int = 85,
+    user: dict = Depends(require_auth)
+):
+    """
+    Get worm image as binary JPEG with cache headers.
+    
+    This endpoint returns raw binary image data instead of base64-encoded JSON,
+    reducing payload size by ~33% and improving VPN/slow connection performance.
+    
+    Args:
+        video_path: Path to the video file
+        worm_id: ID of the worm
+        show_type: "crop", "full", "straightened", or "labeled_crop"
+        show_mask: Whether to draw mask contour
+        quality: JPEG quality (1-100)
+        
+    Returns:
+        Binary JPEG image with ETag and Cache-Control headers
+    """
+    if state.annotation_manager is None:
+        raise HTTPException(status_code=400, detail="No folder loaded")
+    
+    video_annots = state.annotation_manager.annotations.get(video_path)
+    if not video_annots:
+        raise HTTPException(status_code=404, detail=f"No annotations for video: {video_path}")
+    
+    annot = video_annots.annotations.get(worm_id)
+    if not annot:
+        raise HTTPException(status_code=404, detail=f"Worm {worm_id} not found in {video_path}")
+    
+    # Read the video frame
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise HTTPException(status_code=500, detail=f"Could not open video: {video_path}")
+    
+    ret, frame = cap.read()
+    cap.release()
+    
+    if not ret or frame is None:
+        raise HTTPException(status_code=500, detail=f"Could not read frame from: {video_path}")
+    
+    h, w = frame.shape[:2]
+    
+    if show_type == "straightened":
+        if not annot.segmentation_mask_path or not Path(annot.segmentation_mask_path).exists():
+            raise HTTPException(status_code=400, detail=f"Worm {worm_id} has no segmentation mask")
+        
+        mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+        straightened = _straighten_worm_internal(frame, mask)
+        
+        if straightened is None:
+            raise HTTPException(status_code=500, detail="Failed to straighten worm")
+        
+        straightened_rgb = cv2.cvtColor(straightened, cv2.COLOR_BGR2RGB)
+        image_bytes = encode_image_to_bytes(straightened_rgb, quality)
+        
+    elif show_type == "full":
+        x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
+        result = frame.copy()
+        cv2.rectangle(result, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        
+        if annot.head_box:
+            hx1, hy1, hx2, hy2 = [int(c) for c in annot.head_box]
+            cv2.rectangle(result, (hx1, hy1), (hx2, hy2), (0, 255, 0), 2)
+        
+        if annot.tail_box:
+            tx1, ty1, tx2, ty2 = [int(c) for c in annot.tail_box]
+            cv2.rectangle(result, (tx1, ty1), (tx2, ty2), (0, 0, 255), 2)
+        
+        result_rgb = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+        image_bytes = encode_image_to_bytes(result_rgb, quality)
+        
+    elif show_type in ["crop", "labeled_crop"]:
+        x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
+        pad_x = int((x2 - x1) * 0.1)
+        pad_y = int((y2 - y1) * 0.1)
+        x1, y1 = max(0, x1 - pad_x), max(0, y1 - pad_y)
+        x2, y2 = min(w, x2 + pad_x), min(h, y2 + pad_y)
+        
+        crop = frame[y1:y2, x1:x2].copy()
+        offset_x, offset_y = x1, y1
+        
+        if show_mask and annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+            mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+            if mask is not None:
+                mask_crop = mask[y1:y2, x1:x2]
+                contours, _ = cv2.findContours(mask_crop, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                if contours:
+                    cv2.drawContours(crop, contours, -1, (0, 255, 0), 1)
+        
+        if annot.head_box:
+            hx1, hy1, hx2, hy2 = [int(c) for c in annot.head_box]
+            cv2.rectangle(crop, (hx1 - offset_x, hy1 - offset_y), (hx2 - offset_x, hy2 - offset_y), (0, 255, 0), 1)
+        
+        if annot.tail_box:
+            tx1, ty1, tx2, ty2 = [int(c) for c in annot.tail_box]
+            cv2.rectangle(crop, (tx1 - offset_x, ty1 - offset_y), (tx2 - offset_x, ty2 - offset_y), (0, 0, 255), 1)
+        
+        if show_type == "labeled_crop":
+            label_parts = [f"#{worm_id}"]
+            if annot.health_class:
+                label_parts.append(annot.health_class)
+            label = " ".join(label_parts)
+            cv2.putText(crop, label, (3, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
+        
+        crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+        image_bytes = encode_image_to_bytes(crop_rgb, quality)
+    else:
+        raise HTTPException(status_code=400, detail=f"Invalid show_type: {show_type}")
+    
+    return create_image_response(image_bytes, request, max_age=3600)
+
+
+@app.get("/api/tile/frame_image_binary")
+async def get_frame_image_binary(
+    request: Request,
+    video_path: str,
+    show_annotations: bool = True,
+    show_mask: bool = True,
+    quality: int = 85,
+    user: dict = Depends(require_auth)
+):
+    """
+    Get frame image as binary JPEG with cache headers.
+    
+    Returns raw binary image data with proper cache headers for VPN optimization.
+    
+    Args:
+        video_path: Path to the video file
+        show_annotations: Whether to draw annotation boxes
+        show_mask: Whether to draw mask contours
+        quality: JPEG quality (1-100)
+        
+    Returns:
+        Binary JPEG image with ETag and Cache-Control headers
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise HTTPException(status_code=500, detail=f"Could not open video: {video_path}")
+    
+    ret, frame = cap.read()
+    cap.release()
+    
+    if not ret or frame is None:
+        raise HTTPException(status_code=500, detail=f"Could not read frame from: {video_path}")
+    
+    h, w = frame.shape[:2]
+    
+    if show_annotations and state.annotation_manager:
+        video_annots = state.annotation_manager.annotations.get(video_path)
+        if video_annots:
+            for worm_id, annot in video_annots.annotations.items():
+                if annot.detection_box:
+                    x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
+                    
+                    color = (0, 255, 0)
+                    if annot.health_class == "Healthy":
+                        color = (0, 255, 0)
+                    elif annot.health_class == "Slightly Unhealthy":
+                        color = (0, 255, 255)
+                    elif annot.health_class == "Unhealthy":
+                        color = (0, 165, 255)
+                    elif annot.health_class == "Very Unhealthy":
+                        color = (0, 0, 255)
+                    
+                    if annot.censored:
+                        color = (128, 128, 128)
+                    
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    
+                    label_parts = [f"#{worm_id}"]
+                    if annot.health_class:
+                        label_parts.append(annot.health_class[:1])
+                    label = " ".join(label_parts)
+                    
+                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                    cv2.rectangle(frame, (x1, y1 - th - 4), (x1 + tw + 4, y1), color, -1)
+                    cv2.putText(frame, label, (x1 + 2, y1 - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                    
+                    if annot.head_box:
+                        hx1, hy1, hx2, hy2 = [int(c) for c in annot.head_box]
+                        hcx, hcy = (hx1 + hx2) // 2, (hy1 + hy2) // 2
+                        cv2.circle(frame, (hcx, hcy), 5, (0, 255, 0), -1)
+                        cv2.circle(frame, (hcx, hcy), 6, (255, 255, 255), 1)
+                    
+                    if annot.tail_box:
+                        tx1, ty1, tx2, ty2 = [int(c) for c in annot.tail_box]
+                        tcx, tcy = (tx1 + tx2) // 2, (ty1 + ty2) // 2
+                        cv2.circle(frame, (tcx, tcy), 5, (0, 0, 255), -1)
+                        cv2.circle(frame, (tcx, tcy), 6, (255, 255, 255), 1)
+                
+                if show_mask and annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                    mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                    if mask is not None:
+                        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                        if contours:
+                            cv2.drawContours(frame, contours, -1, (255, 255, 255), 1)
+    
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    image_bytes = encode_image_to_bytes(frame_rgb, quality)
+    
+    return create_image_response(image_bytes, request, max_age=3600)
+
+
+class BatchWormImageRequest(BaseModel):
+    """Request for batch worm images."""
+    worms: List[Dict[str, Any]]  # List of {video_path, worm_id}
+    show_type: str = "crop"
+    show_mask: bool = True
+    quality: int = 85
+
+
+@app.post("/api/tile/batch_worm_images")
+async def get_batch_worm_images(
+    request: BatchWormImageRequest,
+    user: dict = Depends(require_auth)
+):
+    """
+    Get multiple worm images in a single request.
+    
+    This endpoint batches multiple image requests into one, reducing HTTP overhead
+    significantly for VPN/slow connections. Images are returned as base64 since
+    we need JSON structure for multiple items.
+    
+    Args:
+        request: BatchWormImageRequest with list of worms to fetch
+        
+    Returns:
+        Dict with images keyed by "video_path:worm_id"
+    """
+    if state.annotation_manager is None:
+        raise HTTPException(status_code=400, detail="No folder loaded")
+    
+    results = {}
+    video_cache = {}  # Cache video frames to avoid re-reading
+    
+    for worm_req in request.worms:
+        video_path = worm_req.get("video_path")
+        worm_id = worm_req.get("worm_id")
+        
+        if video_path is None or worm_id is None:
+            continue
+        
+        key = f"{video_path}:{worm_id}"
+        
+        try:
+            # Get or cache video frame
+            if video_path not in video_cache:
+                cap = cv2.VideoCapture(video_path)
+                if cap.isOpened():
+                    ret, frame = cap.read()
+                    cap.release()
+                    if ret and frame is not None:
+                        video_cache[video_path] = frame
+                    else:
+                        video_cache[video_path] = None
+                else:
+                    cap.release()
+                    video_cache[video_path] = None
+            
+            frame = video_cache.get(video_path)
+            if frame is None:
+                results[key] = {"error": "Could not read video"}
+                continue
+            
+            video_annots = state.annotation_manager.annotations.get(video_path)
+            if not video_annots:
+                results[key] = {"error": "No annotations"}
+                continue
+            
+            annot = video_annots.annotations.get(worm_id)
+            if not annot:
+                results[key] = {"error": "Worm not found"}
+                continue
+            
+            h, w = frame.shape[:2]
+            img_b64 = None
+            
+            if request.show_type == "straightened":
+                if annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                    mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                    straightened = _straighten_worm_internal(frame, mask)
+                    if straightened is not None:
+                        straightened_rgb = cv2.cvtColor(straightened, cv2.COLOR_BGR2RGB)
+                        img_b64 = encode_image_to_base64(straightened_rgb, request.quality)
+            
+            elif request.show_type in ["crop", "labeled_crop"]:
+                x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
+                pad_x = int((x2 - x1) * 0.1)
+                pad_y = int((y2 - y1) * 0.1)
+                x1, y1 = max(0, x1 - pad_x), max(0, y1 - pad_y)
+                x2, y2 = min(w, x2 + pad_x), min(h, y2 + pad_y)
+                
+                crop = frame[y1:y2, x1:x2].copy()
+                offset_x, offset_y = x1, y1
+                
+                if request.show_mask and annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                    mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                    if mask is not None:
+                        mask_crop = mask[y1:y2, x1:x2]
+                        contours, _ = cv2.findContours(mask_crop, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                        if contours:
+                            cv2.drawContours(crop, contours, -1, (0, 255, 0), 1)
+                
+                if annot.head_box:
+                    hx1, hy1, hx2, hy2 = [int(c) for c in annot.head_box]
+                    cv2.rectangle(crop, (hx1 - offset_x, hy1 - offset_y), (hx2 - offset_x, hy2 - offset_y), (0, 255, 0), 1)
+                
+                if annot.tail_box:
+                    tx1, ty1, tx2, ty2 = [int(c) for c in annot.tail_box]
+                    cv2.rectangle(crop, (tx1 - offset_x, ty1 - offset_y), (tx2 - offset_x, ty2 - offset_y), (0, 0, 255), 1)
+                
+                if request.show_type == "labeled_crop":
+                    label_parts = [f"#{worm_id}"]
+                    if annot.health_class:
+                        label_parts.append(annot.health_class)
+                    label = " ".join(label_parts)
+                    cv2.putText(crop, label, (3, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
+                
+                crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+                img_b64 = encode_image_to_base64(crop_rgb, request.quality)
+            
+            if img_b64:
+                results[key] = {"image": img_b64}
+            else:
+                results[key] = {"error": "Failed to generate image"}
+                
+        except Exception as e:
+            results[key] = {"error": str(e)}
+    
+    return {
+        "success": True,
+        "count": len(results),
+        "images": results
+    }
+
+
+class BatchFrameImageRequest(BaseModel):
+    """Request for batch frame images."""
+    video_paths: List[str]
+    show_annotations: bool = True
+    show_mask: bool = True
+    quality: int = 85
+
+
+@app.post("/api/tile/batch_frame_images")
+async def get_batch_frame_images(
+    request: BatchFrameImageRequest,
+    user: dict = Depends(require_auth)
+):
+    """
+    Get multiple frame images in a single request.
+    
+    Batches multiple frame requests into one HTTP call for VPN optimization.
+    
+    Args:
+        request: BatchFrameImageRequest with list of video paths
+        
+    Returns:
+        Dict with images keyed by video_path
+    """
+    results = {}
+    
+    for video_path in request.video_paths:
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                results[video_path] = {"error": "Could not open video"}
+                continue
+            
+            ret, frame = cap.read()
+            cap.release()
+            
+            if not ret or frame is None:
+                results[video_path] = {"error": "Could not read frame"}
+                continue
+            
+            h, w = frame.shape[:2]
+            
+            if request.show_annotations and state.annotation_manager:
+                video_annots = state.annotation_manager.annotations.get(video_path)
+                if video_annots:
+                    for worm_id, annot in video_annots.annotations.items():
+                        if annot.detection_box:
+                            x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
+                            
+                            color = (0, 255, 0)
+                            if annot.health_class == "Healthy":
+                                color = (0, 255, 0)
+                            elif annot.health_class == "Slightly Unhealthy":
+                                color = (0, 255, 255)
+                            elif annot.health_class == "Unhealthy":
+                                color = (0, 165, 255)
+                            elif annot.health_class == "Very Unhealthy":
+                                color = (0, 0, 255)
+                            
+                            if annot.censored:
+                                color = (128, 128, 128)
+                            
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                            
+                            label_parts = [f"#{worm_id}"]
+                            if annot.health_class:
+                                label_parts.append(annot.health_class[:1])
+                            label = " ".join(label_parts)
+                            
+                            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                            cv2.rectangle(frame, (x1, y1 - th - 4), (x1 + tw + 4, y1), color, -1)
+                            cv2.putText(frame, label, (x1 + 2, y1 - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                        
+                        if request.show_mask and annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                            mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                            if mask is not None:
+                                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                                if contours:
+                                    cv2.drawContours(frame, contours, -1, (255, 255, 255), 1)
+            
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img_b64 = encode_image_to_base64(frame_rgb, request.quality)
+            
+            results[video_path] = {
+                "image": img_b64,
+                "width": w,
+                "height": h
+            }
+            
+        except Exception as e:
+            results[video_path] = {"error": str(e)}
+    
+    return {
+        "success": True,
+        "count": len(results),
+        "images": results
     }
 
 
