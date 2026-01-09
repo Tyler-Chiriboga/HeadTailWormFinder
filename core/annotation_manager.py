@@ -29,6 +29,8 @@ class WormAnnotation:
     health_score: Optional[float] = None                               # Health CNN score (0-1)
     health_classification: Optional[str] = None                        # "Healthy" or "Leaky"
     health_class: Optional[str] = None                                 # A, B, C, D, E (A=0, B=0.25, C=0.5, D=0.75, E=1)
+    modified_by: Optional[str] = None                                  # Username who last modified
+    modified_at: Optional[str] = None                                  # ISO timestamp of last modification
     
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -47,7 +49,9 @@ class WormAnnotation:
             'censored': self.censored,
             'health_score': self.health_score,
             'health_classification': self.health_classification,
-            'health_class': self.health_class
+            'health_class': self.health_class,
+            'modified_by': self.modified_by,
+            'modified_at': self.modified_at
         }
     
     @classmethod
@@ -68,7 +72,9 @@ class WormAnnotation:
             censored=data.get('censored', False),
             health_score=data.get('health_score'),
             health_classification=data.get('health_classification'),
-            health_class=data.get('health_class')
+            health_class=data.get('health_class'),
+            modified_by=data.get('modified_by'),
+            modified_at=data.get('modified_at')
         )
     
     def is_complete(self) -> bool:
@@ -306,7 +312,8 @@ class AnnotationManager:
         self,
         video_path: str,
         worm_id: int,
-        head_box: Tuple[float, float, float, float]
+        head_box: Tuple[float, float, float, float],
+        modified_by: Optional[str] = None
     ) -> bool:
         """Set head bounding box for a worm."""
         if video_path not in self.annotations:
@@ -316,7 +323,11 @@ class AnnotationManager:
         if worm_id not in video_annot.annotations:
             return False
         
-        video_annot.annotations[worm_id].head_box = head_box
+        annot = video_annot.annotations[worm_id]
+        annot.head_box = head_box
+        if modified_by:
+            annot.modified_by = modified_by
+            annot.modified_at = datetime.now().isoformat()
         video_annot.modified_at = datetime.now().isoformat()
         self._unsaved_changes = True
         return True
@@ -325,7 +336,8 @@ class AnnotationManager:
         self,
         video_path: str,
         worm_id: int,
-        tail_box: Tuple[float, float, float, float]
+        tail_box: Tuple[float, float, float, float],
+        modified_by: Optional[str] = None
     ) -> bool:
         """Set tail bounding box for a worm."""
         if video_path not in self.annotations:
@@ -335,7 +347,11 @@ class AnnotationManager:
         if worm_id not in video_annot.annotations:
             return False
         
-        video_annot.annotations[worm_id].tail_box = tail_box
+        annot = video_annot.annotations[worm_id]
+        annot.tail_box = tail_box
+        if modified_by:
+            annot.modified_by = modified_by
+            annot.modified_at = datetime.now().isoformat()
         video_annot.modified_at = datetime.now().isoformat()
         self._unsaved_changes = True
         return True
@@ -344,7 +360,8 @@ class AnnotationManager:
         self,
         video_path: str,
         worm_id: int,
-        detection_box: Tuple[float, float, float, float]
+        detection_box: Tuple[float, float, float, float],
+        modified_by: Optional[str] = None
     ) -> bool:
         """Set detection bounding box for a worm."""
         if video_path not in self.annotations:
@@ -354,7 +371,11 @@ class AnnotationManager:
         if worm_id not in video_annot.annotations:
             return False
         
-        video_annot.annotations[worm_id].detection_box = detection_box
+        annot = video_annot.annotations[worm_id]
+        annot.detection_box = detection_box
+        if modified_by:
+            annot.modified_by = modified_by
+            annot.modified_at = datetime.now().isoformat()
         video_annot.modified_at = datetime.now().isoformat()
         self._unsaved_changes = True
         return True
@@ -363,7 +384,8 @@ class AnnotationManager:
         self,
         video_path: str,
         worm_id: int,
-        head_line: Tuple[float, float, float, float]
+        head_line: Tuple[float, float, float, float],
+        modified_by: Optional[str] = None
     ) -> bool:
         """Set head line annotation for a worm."""
         if video_path not in self.annotations:
@@ -373,7 +395,11 @@ class AnnotationManager:
         if worm_id not in video_annot.annotations:
             return False
         
-        video_annot.annotations[worm_id].head_line = head_line
+        annot = video_annot.annotations[worm_id]
+        annot.head_line = head_line
+        if modified_by:
+            annot.modified_by = modified_by
+            annot.modified_at = datetime.now().isoformat()
         video_annot.modified_at = datetime.now().isoformat()
         self._unsaved_changes = True
         return True
@@ -382,7 +408,8 @@ class AnnotationManager:
         self,
         video_path: str,
         worm_id: int,
-        tail_line: Tuple[float, float, float, float]
+        tail_line: Tuple[float, float, float, float],
+        modified_by: Optional[str] = None
     ) -> bool:
         """Set tail line annotation for a worm."""
         if video_path not in self.annotations:
@@ -392,7 +419,11 @@ class AnnotationManager:
         if worm_id not in video_annot.annotations:
             return False
         
-        video_annot.annotations[worm_id].tail_line = tail_line
+        annot = video_annot.annotations[worm_id]
+        annot.tail_line = tail_line
+        if modified_by:
+            annot.modified_by = modified_by
+            annot.modified_at = datetime.now().isoformat()
         video_annot.modified_at = datetime.now().isoformat()
         self._unsaved_changes = True
         return True
@@ -401,7 +432,8 @@ class AnnotationManager:
         self,
         video_path: str,
         worm_id: int,
-        censored: bool
+        censored: bool,
+        modified_by: Optional[str] = None
     ) -> bool:
         """Set censored status for a worm (exclude from analysis)."""
         if video_path not in self.annotations:
@@ -411,7 +443,11 @@ class AnnotationManager:
         if worm_id not in video_annot.annotations:
             return False
         
-        video_annot.annotations[worm_id].censored = censored
+        annot = video_annot.annotations[worm_id]
+        annot.censored = censored
+        if modified_by:
+            annot.modified_by = modified_by
+            annot.modified_at = datetime.now().isoformat()
         video_annot.modified_at = datetime.now().isoformat()
         self._unsaved_changes = True
         return True

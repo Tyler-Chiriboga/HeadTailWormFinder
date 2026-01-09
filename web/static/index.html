@@ -972,6 +972,7 @@
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Space + Drag</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Pan canvas (temporary)</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Middle-click Drag</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Pan canvas (anytime)</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Delete</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Delete selected worm</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>X</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Censor/uncensor selected worm</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>[ / ]</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Decrease/increase brush size</td></tr>
                 <tr><td style="padding:5px;"><kbd>?</kbd></td><td style="padding:5px;">Toggle this help</td></tr>
             </table>
@@ -1149,6 +1150,9 @@
                 <div style="display: flex; gap: 10px;">
                     <button id="tile-prev-page" style="padding: 8px 15px;">◀ Prev</button>
                     <button id="tile-next-page" style="padding: 8px 15px;">Next ▶</button>
+                </div>
+                <div id="tile-worm-actions" style="display: flex; gap: 10px;">
+                    <button id="tile-classify-health" style="padding: 8px 15px; background: #3a4a6a;" title="Classify health for worms missing health scores">🏥 Classify Health</button>
                 </div>
                 <div id="tile-qc-buttons" style="display: none; gap: 10px;">
                     <button id="tile-qc-page" style="padding: 8px 15px; background: #2a5a4a;">✓ QC This Page</button>
@@ -1507,7 +1511,9 @@
             isPanning: false,
             panStart: null,
             scrollStart: null,
-            spacePressed: false
+            spacePressed: false,
+            // Folder info (set by API responses)
+            folderInfo: null
         };
         
         // Helper to display worm IDs
@@ -2901,6 +2907,9 @@
         }
         
         function updateFolderInfo(info) {
+            // Store in state for use by tile view and other components
+            state.folderInfo = info;
+            
             const folderDiv = document.getElementById('current-folder');
             if (info && info.folder_count > 0) {
                 folderDiv.style.display = 'block';
@@ -3357,8 +3366,69 @@
             frameData: [],   // Array of {videoPath, videoName, wormCount, folderName}
             wormImages: [],  // Cache of {wormId, videoPath, imageUrl, wormData}
             frameImages: [], // Cache of {videoPath, imageUrl, frameData}
-            loadingImages: false
+            loadingImages: false,
+            lastFolderKey: null  // Track which folder the saved page is for
         };
+        
+        // Save tile state to localStorage
+        function saveTileState() {
+            // Use folder index + name as unique key
+            const folderKey = state.folderInfo 
+                ? `${state.folderInfo.current_folder_index}_${state.folderInfo.folder_name}` 
+                : null;
+            const stateToSave = {
+                currentPage: tileState.currentPage,
+                gridSize: tileState.gridSize,
+                showType: tileState.showType,
+                showMask: tileState.showMask,
+                showAnnotations: tileState.showAnnotations,
+                showFrameMask: tileState.showFrameMask,
+                hideCensored: tileState.hideCensored,
+                onlyCensored: tileState.onlyCensored,
+                source: tileState.source,
+                mode: tileState.mode,
+                lastFolderKey: folderKey
+            };
+            localStorage.setItem('tileQCState', JSON.stringify(stateToSave));
+            console.log('[saveTileState] Saved page:', tileState.currentPage, 'for folder:', folderKey);
+        }
+        
+        // Load tile state from localStorage
+        function loadTileState() {
+            try {
+                const saved = localStorage.getItem('tileQCState');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // Use folder index + name as unique key
+                    const currentFolderKey = state.folderInfo 
+                        ? `${state.folderInfo.current_folder_index}_${state.folderInfo.folder_name}` 
+                        : null;
+                    // Only restore page if we're in the same folder
+                    const sameFolder = parsed.lastFolderKey === currentFolderKey;
+                    
+                    console.log('[loadTileState] Current folder:', currentFolderKey, 'Saved folder:', parsed.lastFolderKey, 'Same:', sameFolder);
+                    
+                    tileState.gridSize = parsed.gridSize || 3;
+                    tileState.showType = parsed.showType || 'crop';
+                    tileState.showMask = parsed.showMask !== false;
+                    tileState.showAnnotations = parsed.showAnnotations !== false;
+                    tileState.showFrameMask = parsed.showFrameMask !== false;
+                    tileState.hideCensored = parsed.hideCensored || false;
+                    tileState.onlyCensored = parsed.onlyCensored || false;
+                    tileState.source = parsed.source || 'current_video';
+                    tileState.mode = parsed.mode || 'worms';
+                    // Only restore page position if same folder
+                    tileState.currentPage = sameFolder ? (parsed.currentPage || 0) : 0;
+                    tileState.lastFolderKey = parsed.lastFolderKey;
+                    
+                    console.log('[loadTileState] Restored page:', tileState.currentPage);
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error loading tile state:', e);
+            }
+            return false;
+        }
         
         document.getElementById('tile-qc-btn').onclick = () => {
             openTileQCModal();
@@ -3371,6 +3441,7 @@
         document.getElementById('tile-mode').onchange = (e) => {
             tileState.mode = e.target.value;
             tileState.currentPage = 0;
+            saveTileState();  // Persist state
             
             // Show/hide relevant options
             const wormOptions = document.getElementById('tile-worm-options');
@@ -3378,6 +3449,7 @@
             const annotationsOption = document.getElementById('tile-annotations-option');
             const frameMaskOption = document.getElementById('tile-frame-mask-option');
             const qcButtons = document.getElementById('tile-qc-buttons');
+            const wormActions = document.getElementById('tile-worm-actions');
             const sourceSelect = document.getElementById('tile-source');
             
             if (tileState.mode === 'frames') {
@@ -3386,6 +3458,7 @@
                 annotationsOption.style.display = 'flex';
                 frameMaskOption.style.display = 'flex';
                 qcButtons.style.display = 'flex';
+                wormActions.style.display = 'none';
                 // Disable 'current_video' for frames mode (doesn't make sense)
                 sourceSelect.querySelector('option[value="current_video"]').disabled = true;
                 if (tileState.source === 'current_video') {
@@ -3398,6 +3471,7 @@
                 annotationsOption.style.display = 'none';
                 frameMaskOption.style.display = 'none';
                 qcButtons.style.display = 'none';
+                wormActions.style.display = 'flex';
                 sourceSelect.querySelector('option[value="current_video"]').disabled = false;
             }
             
@@ -3407,36 +3481,72 @@
         document.getElementById('tile-source').onchange = (e) => {
             tileState.source = e.target.value;
             tileState.currentPage = 0;
+            saveTileState();  // Persist state
             loadTileData();
         };
         
-        document.getElementById('tile-grid-size').onchange = (e) => {
+        document.getElementById('tile-grid-size').onchange = async (e) => {
             tileState.gridSize = parseInt(e.target.value);
             tileState.currentPage = 0;
+            saveTileState();  // Persist state
             renderTileGrid();
-        };
-        
-        document.getElementById('tile-show-type').onchange = (e) => {
-            tileState.showType = e.target.value;
-            loadTileImages();
-        };
-        
-        document.getElementById('tile-show-mask').onchange = (e) => {
-            tileState.showMask = e.target.checked;
-            // Only reload if on annotated view where mask matters
-            if (tileState.showType === 'annotated') {
-                loadTileImages();
+            // Load images for the new grid layout
+            if (tileState.mode === 'frames') {
+                await loadVisibleFrameImages();
+            } else {
+                await loadVisibleWormImages();
             }
         };
         
-        document.getElementById('tile-show-annotations').onchange = (e) => {
-            tileState.showAnnotations = e.target.checked;
-            loadTileFrameImages();
+        document.getElementById('tile-show-type').onchange = async (e) => {
+            tileState.showType = e.target.value;
+            saveTileState();  // Persist state
+            // Reset loaded flags to force re-fetch with new options
+            for (const worm of tileState.wormImages) {
+                worm.loaded = false;
+                worm.imageUrl = null;
+            }
+            renderTileGrid();
+            await loadVisibleWormImages();
         };
         
-        document.getElementById('tile-frame-show-mask').onchange = (e) => {
+        document.getElementById('tile-show-mask').onchange = async (e) => {
+            tileState.showMask = e.target.checked;
+            saveTileState();  // Persist state
+            // Only reload if on annotated view where mask matters
+            if (tileState.showType === 'annotated') {
+                // Reset loaded flags to force re-fetch with new options
+                for (const worm of tileState.wormImages) {
+                    worm.loaded = false;
+                    worm.imageUrl = null;
+                }
+                renderTileGrid();
+                await loadVisibleWormImages();
+            }
+        };
+        
+        document.getElementById('tile-show-annotations').onchange = async (e) => {
+            tileState.showAnnotations = e.target.checked;
+            saveTileState();  // Persist state
+            // Reset loaded flags to force re-fetch with new options
+            for (const frame of tileState.frameImages) {
+                frame.loaded = false;
+                frame.imageUrl = null;
+            }
+            renderTileGrid();
+            await loadVisibleFrameImages();
+        };
+        
+        document.getElementById('tile-frame-show-mask').onchange = async (e) => {
             tileState.showFrameMask = e.target.checked;
-            loadTileFrameImages();
+            saveTileState();  // Persist state
+            // Reset loaded flags to force re-fetch with new options
+            for (const frame of tileState.frameImages) {
+                frame.loaded = false;
+                frame.imageUrl = null;
+            }
+            renderTileGrid();
+            await loadVisibleFrameImages();
         };
         
         document.getElementById('tile-hide-censored').onchange = (e) => {
@@ -3447,6 +3557,7 @@
                 document.getElementById('tile-only-censored').checked = false;
             }
             tileState.currentPage = 0;
+            saveTileState();  // Persist state
             // Re-filter and reload
             if (tileState.mode === 'worms') {
                 loadTileWorms();
@@ -3463,6 +3574,7 @@
                 document.getElementById('tile-hide-censored').checked = false;
             }
             tileState.currentPage = 0;
+            saveTileState();  // Persist state
             // Re-filter and reload
             if (tileState.mode === 'worms') {
                 loadTileWorms();
@@ -3526,46 +3638,145 @@
             }
         };
         
-        document.getElementById('tile-prev-page').onclick = () => {
-            if (tileState.currentPage > 0) {
-                tileState.currentPage--;
-                renderTileGrid();
+        // Classify health for worms missing health scores
+        document.getElementById('tile-classify-health').onclick = async () => {
+            const source = tileState.source;
+            const btn = document.getElementById('tile-classify-health');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Classifying...';
+            setStatus('Classifying health scores...');
+            
+            try {
+                const result = await api(`/classify/all?source=${source}`, {
+                    method: 'POST'
+                });
+                
+                if (result.success) {
+                    setStatus(`Health classification: ${result.classified} classified, ${result.skipped} skipped, ${result.failed} failed`);
+                    
+                    // Reload worm data to get updated health classes
+                    if (tileState.mode === 'worms') {
+                        await loadTileWorms(true);  // Preserve page
+                    }
+                }
+            } catch (e) {
+                setStatus('Error classifying health: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         };
         
-        document.getElementById('tile-next-page').onclick = () => {
+        document.getElementById('tile-prev-page').onclick = async () => {
+            if (tileState.currentPage > 0) {
+                tileState.currentPage--;
+                saveTileState();  // Persist page position
+                renderTileGrid();
+                // Load images for the new visible page
+                if (tileState.mode === 'frames') {
+                    await loadVisibleFrameImages();
+                } else {
+                    await loadVisibleWormImages();
+                }
+            }
+        };
+        
+        document.getElementById('tile-next-page').onclick = async () => {
             const tilesPerPage = tileState.gridSize * tileState.gridSize;
             const dataLength = tileState.mode === 'frames' ? tileState.frameData.length : tileState.wormData.length;
             const totalPages = Math.ceil(dataLength / tilesPerPage);
             if (tileState.currentPage < totalPages - 1) {
                 tileState.currentPage++;
+                saveTileState();  // Persist page position
                 renderTileGrid();
+                // Load images for the new visible page
+                if (tileState.mode === 'frames') {
+                    await loadVisibleFrameImages();
+                } else {
+                    await loadVisibleWormImages();
+                }
             }
         };
         
         async function openTileQCModal() {
             document.getElementById('tile-qc-modal').classList.add('show');
-            tileState.currentPage = 0;
+            
+            // Load saved state (including page position)
+            const hasState = loadTileState();
+            
+            // Update UI controls to match restored state
+            document.getElementById('tile-mode').value = tileState.mode;
+            document.getElementById('tile-source').value = tileState.source;
+            document.getElementById('tile-grid-size').value = tileState.gridSize;
+            document.getElementById('tile-show-type').value = tileState.showType;
+            document.getElementById('tile-show-mask').checked = tileState.showMask;
+            document.getElementById('tile-show-annotations').checked = tileState.showAnnotations;
+            document.getElementById('tile-frame-show-mask').checked = tileState.showFrameMask;
+            document.getElementById('tile-hide-censored').checked = tileState.hideCensored;
+            document.getElementById('tile-only-censored').checked = tileState.onlyCensored;
+            
+            // If folder changed, reset page to 0
+            const currentFolderKey = state.folderInfo 
+                ? `${state.folderInfo.current_folder_index}_${state.folderInfo.folder_name}` 
+                : null;
+            if (tileState.lastFolderKey !== currentFolderKey) {
+                tileState.currentPage = 0;
+            }
+            tileState.lastFolderKey = currentFolderKey;
+            
             tileState.source = document.getElementById('tile-source').value;
             tileState.showMask = document.getElementById('tile-show-mask').checked;
             tileState.showAnnotations = document.getElementById('tile-show-annotations').checked;
             tileState.mode = document.getElementById('tile-mode').value;
             
-            // Trigger mode change to set up UI correctly
-            document.getElementById('tile-mode').dispatchEvent(new Event('change'));
+            // Set up UI correctly based on mode (without triggering change event which resets page)
+            const wormOptions = document.getElementById('tile-worm-options');
+            const maskOption = document.getElementById('tile-mask-option');
+            const annotationsOption = document.getElementById('tile-annotations-option');
+            const frameMaskOption = document.getElementById('tile-frame-mask-option');
+            const qcButtons = document.getElementById('tile-qc-buttons');
+            const wormActions = document.getElementById('tile-worm-actions');
+            const sourceSelect = document.getElementById('tile-source');
+            
+            if (tileState.mode === 'frames') {
+                wormOptions.style.display = 'none';
+                maskOption.style.display = 'none';
+                annotationsOption.style.display = 'flex';
+                frameMaskOption.style.display = 'flex';
+                qcButtons.style.display = 'flex';
+                wormActions.style.display = 'none';
+                sourceSelect.querySelector('option[value="current_video"]').disabled = true;
+            } else {
+                wormOptions.style.display = 'flex';
+                maskOption.style.display = 'flex';
+                annotationsOption.style.display = 'none';
+                frameMaskOption.style.display = 'none';
+                qcButtons.style.display = 'none';
+                wormActions.style.display = 'flex';
+                sourceSelect.querySelector('option[value="current_video"]').disabled = false;
+            }
+            
+            // Load data but preserve the current page
+            await loadTileData(true);
+            saveTileState();
         }
         
-        async function loadTileData() {
+        async function loadTileData(preservePage = false) {
             if (tileState.mode === 'frames') {
-                await loadTileFrames();
+                await loadTileFrames(preservePage);
             } else {
-                await loadTileWorms();
+                await loadTileWorms(preservePage);
             }
         }
         
-        async function loadTileWorms() {
+        async function loadTileWorms(preservePage = false) {
             const container = document.getElementById('tile-grid-container');
             container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading worm list...</div>';
+            
+            // Save current page before loading
+            const savedPage = tileState.currentPage;
             
             try {
                 const result = await api(`/tile/all_worms?source=${tileState.source}`);
@@ -3580,7 +3791,15 @@
                 
                 tileState.wormData = worms;
                 tileState.wormImages = []; // Clear image cache when worm list changes
-                tileState.currentPage = 0;
+                
+                // Restore page if preserving, but clamp to valid range
+                if (preservePage) {
+                    const tilesPerPage = tileState.gridSize * tileState.gridSize;
+                    const totalPages = Math.ceil(tileState.wormData.length / tilesPerPage);
+                    tileState.currentPage = Math.min(savedPage, Math.max(0, totalPages - 1));
+                } else {
+                    tileState.currentPage = 0;
+                }
                 
                 if (tileState.wormData.length === 0) {
                     let msg = 'No worms found. Run detection first.';
@@ -3598,15 +3817,26 @@
             }
         }
         
-        async function loadTileFrames() {
+        async function loadTileFrames(preservePage = false) {
             const container = document.getElementById('tile-grid-container');
             container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading frame list...</div>';
+            
+            // Save current page before loading
+            const savedPage = tileState.currentPage;
             
             try {
                 const result = await api(`/tile/all_frames?source=${tileState.source}`);
                 tileState.frameData = result.frames || [];
                 tileState.frameImages = []; // Clear image cache when frame list changes
-                tileState.currentPage = 0;
+                
+                // Restore page if preserving, but clamp to valid range
+                if (preservePage) {
+                    const tilesPerPage = tileState.gridSize * tileState.gridSize;
+                    const totalPages = Math.ceil(tileState.frameData.length / tilesPerPage);
+                    tileState.currentPage = Math.min(savedPage, Math.max(0, totalPages - 1));
+                } else {
+                    tileState.currentPage = 0;
+                }
                 
                 if (tileState.frameData.length === 0) {
                     container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">No frames found.</div>';
@@ -3628,21 +3858,55 @@
             const container = document.getElementById('tile-grid-container');
             container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading frame images...</div>';
             
-            tileState.frameImages = [];
+            // Initialize frameImages with placeholders (no image data yet)
+            tileState.frameImages = tileState.frameData.map(frameData => ({
+                videoPath: frameData.video_path,
+                videoName: frameData.video_name,
+                folderName: frameData.folder_name,
+                folderIndex: frameData.folder_index,
+                wormCount: frameData.worm_count,
+                qcComplete: frameData.qc_complete,
+                imageUrl: null,  // Will be loaded on demand
+                frameData: frameData,
+                loaded: false
+            }));
+            
+            tileState.loadingImages = false;
+            
+            // Render grid first (shows placeholders), then load visible page
+            renderTileGrid();
+            await loadVisibleFrameImages();
+        }
+        
+        async function loadVisibleFrameImages() {
+            // Only load images for the current visible page
+            const tilesPerPage = tileState.gridSize * tileState.gridSize;
+            const startIdx = tileState.currentPage * tilesPerPage;
+            const endIdx = Math.min(startIdx + tilesPerPage, tileState.frameImages.length);
+            
+            // Get frames that need loading on this page
+            const framesToLoad = [];
+            for (let i = startIdx; i < endIdx; i++) {
+                if (!tileState.frameImages[i].loaded) {
+                    framesToLoad.push({ index: i, frame: tileState.frameImages[i] });
+                }
+            }
+            
+            if (framesToLoad.length === 0) return;  // All already loaded
+            
+            const container = document.getElementById('tile-grid-container');
             
             // Use batch endpoint for better VPN performance
             const batchSize = 8;  // Optimal batch size for frames
-            const totalFrames = tileState.frameData.length;
-            
-            for (let i = 0; i < totalFrames; i += batchSize) {
-                const batch = tileState.frameData.slice(i, Math.min(i + batchSize, totalFrames));
+            const totalToLoad = framesToLoad.length;
                 
-                // Update progress
-                container.innerHTML = `<div style="color: #888; text-align: center; padding: 40px;">Loading frames... ${Math.min(i + batchSize, totalFrames)}/${totalFrames}</div>`;
+            for (let i = 0; i < totalToLoad; i += batchSize) {
+                const batchItems = framesToLoad.slice(i, Math.min(i + batchSize, totalToLoad));
+                const batch = batchItems.map(item => item.frame);
                 
                 try {
                     // Use batch endpoint - single request for multiple frames
-                    const videoPaths = batch.map(f => f.video_path);
+                    const videoPaths = batch.map(f => f.videoPath);
                     const result = await api('/tile/batch_frame_images', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -3653,58 +3917,36 @@
                         })
                     });
                     
-                    // Process batch results
-                    for (const frameData of batch) {
-                        const imgData = result.images?.[frameData.video_path];
-                        let imageUrl = null;
-                        
+                    // Process batch results - update existing entries
+                    for (const item of batchItems) {
+                        const imgData = result.images?.[item.frame.videoPath];
                         if (imgData && imgData.image) {
-                            imageUrl = 'data:image/jpeg;base64,' + imgData.image;
+                            tileState.frameImages[item.index].imageUrl = 'data:image/jpeg;base64,' + imgData.image;
                         }
-                        
-                        tileState.frameImages.push({
-                            videoPath: frameData.video_path,
-                            videoName: frameData.video_name,
-                            folderName: frameData.folder_name,
-                            folderIndex: frameData.folder_index,
-                            wormCount: frameData.worm_count,
-                            qcComplete: frameData.qc_complete,
-                            imageUrl: imageUrl,
-                            frameData: frameData
-                        });
+                        tileState.frameImages[item.index].loaded = true;
                     }
+                    
+                    // Re-render to show loaded images
+                    renderTileGrid();
                 } catch (e) {
                     console.error('Batch frame load error, falling back to individual:', e);
                     // Fallback to individual requests
-                    for (const frameData of batch) {
-                        let imageUrl = null;
+                    for (const item of batchItems) {
                         try {
                             const showAnnotations = tileState.showAnnotations ? 'true' : 'false';
                             const showMask = tileState.showFrameMask ? 'true' : 'false';
-                            const result = await api(`/tile/frame_image?video_path=${encodeURIComponent(frameData.video_path)}&show_annotations=${showAnnotations}&show_mask=${showMask}`);
+                            const result = await api(`/tile/frame_image?video_path=${encodeURIComponent(item.frame.videoPath)}&show_annotations=${showAnnotations}&show_mask=${showMask}`);
                             if (result.success && result.image) {
-                                imageUrl = 'data:image/jpeg;base64,' + result.image;
+                                tileState.frameImages[item.index].imageUrl = 'data:image/jpeg;base64,' + result.image;
                             }
                         } catch (err) {
-                            console.error(`Error loading frame for ${frameData.video_name}:`, err);
+                            console.error(`Error loading frame for ${item.frame.videoName}:`, err);
                         }
-                        
-                        tileState.frameImages.push({
-                            videoPath: frameData.video_path,
-                            videoName: frameData.video_name,
-                            folderName: frameData.folder_name,
-                            folderIndex: frameData.folder_index,
-                            wormCount: frameData.worm_count,
-                            qcComplete: frameData.qc_complete,
-                            imageUrl: imageUrl,
-                            frameData: frameData
-                        });
+                        tileState.frameImages[item.index].loaded = true;
                     }
+                    renderTileGrid();
                 }
             }
-            
-            tileState.loadingImages = false;
-            renderTileGrid();
         }
         
         async function loadTileImages() {
@@ -3714,23 +3956,53 @@
             const container = document.getElementById('tile-grid-container');
             container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading worm images...</div>';
             
-            tileState.wormImages = [];
+            // Initialize wormImages with placeholders (no image data yet) - like frames
+            tileState.wormImages = tileState.wormData.map(wormData => ({
+                wormId: wormData.worm_id,
+                videoPath: wormData.video_path,
+                videoName: wormData.video_name,
+                folderName: wormData.folder_name,
+                imageUrl: null,  // Will be loaded on demand
+                wormData: wormData,
+                loaded: false
+            }));
+            
+            tileState.loadingImages = false;
+            
+            // Render grid first (shows placeholders), then load visible page
+            renderTileGrid();
+            await loadVisibleWormImages();
+        }
+        
+        async function loadVisibleWormImages() {
+            // Only load images for the current visible page
+            const tilesPerPage = tileState.gridSize * tileState.gridSize;
+            const startIdx = tileState.currentPage * tilesPerPage;
+            const endIdx = Math.min(startIdx + tilesPerPage, tileState.wormImages.length);
+            
+            // Get worms that need loading on this page
+            const wormsToLoad = [];
+            for (let i = startIdx; i < endIdx; i++) {
+                if (!tileState.wormImages[i].loaded) {
+                    wormsToLoad.push({ index: i, worm: tileState.wormImages[i] });
+                }
+            }
+            
+            if (wormsToLoad.length === 0) return;  // All already loaded
             
             // Use batch endpoint for better VPN performance
             const batchSize = 16;  // Optimal batch size for worm crops (smaller images)
-            const totalWorms = tileState.wormData.length;
+            const totalToLoad = wormsToLoad.length;
             
-            for (let i = 0; i < totalWorms; i += batchSize) {
-                const batch = tileState.wormData.slice(i, Math.min(i + batchSize, totalWorms));
-                
-                // Update progress
-                container.innerHTML = `<div style="color: #888; text-align: center; padding: 40px;">Loading images... ${Math.min(i + batchSize, totalWorms)}/${totalWorms}</div>`;
+            for (let i = 0; i < totalToLoad; i += batchSize) {
+                const batchItems = wormsToLoad.slice(i, Math.min(i + batchSize, totalToLoad));
+                const batch = batchItems.map(item => item.worm);
                 
                 try {
                     // Use batch endpoint - single request for multiple worms
                     const wormRequests = batch.map(w => ({
-                        video_path: w.video_path,
-                        worm_id: w.worm_id
+                        video_path: w.videoPath,
+                        worm_id: w.wormId
                     }));
                     
                     const result = await api('/tile/batch_worm_images', {
@@ -3743,54 +4015,36 @@
                         })
                     });
                     
-                    // Process batch results
-                    for (const wormData of batch) {
-                        const key = `${wormData.video_path}:${wormData.worm_id}`;
+                    // Process batch results - update existing entries
+                    for (const item of batchItems) {
+                        const key = `${item.worm.videoPath}:${item.worm.wormId}`;
                         const imgData = result.images?.[key];
-                        let imageUrl = null;
-                        
                         if (imgData && imgData.image) {
-                            imageUrl = 'data:image/jpeg;base64,' + imgData.image;
+                            tileState.wormImages[item.index].imageUrl = 'data:image/jpeg;base64,' + imgData.image;
                         }
-                        
-                        tileState.wormImages.push({
-                            wormId: wormData.worm_id,
-                            videoPath: wormData.video_path,
-                            videoName: wormData.video_name,
-                            folderName: wormData.folder_name,
-                            imageUrl: imageUrl,
-                            wormData: wormData
-                        });
+                        tileState.wormImages[item.index].loaded = true;
                     }
+                    
+                    // Re-render to show loaded images
+                    renderTileGrid();
                 } catch (e) {
                     console.error('Batch worm load error, falling back to individual:', e);
                     // Fallback to individual requests
-                    for (const wormData of batch) {
-                        let imageUrl = null;
+                    for (const item of batchItems) {
                         try {
                             const showMaskParam = tileState.showMask ? 'true' : 'false';
-                            const result = await api(`/tile/worm_image?video_path=${encodeURIComponent(wormData.video_path)}&worm_id=${wormData.worm_id}&show_type=${tileState.showType}&show_mask=${showMaskParam}`);
+                            const result = await api(`/tile/worm_image?video_path=${encodeURIComponent(item.worm.videoPath)}&worm_id=${item.worm.wormId}&show_type=${tileState.showType}&show_mask=${showMaskParam}`);
                             if (result.success && result.image) {
-                                imageUrl = 'data:image/jpeg;base64,' + result.image;
+                                tileState.wormImages[item.index].imageUrl = 'data:image/jpeg;base64,' + result.image;
                             }
                         } catch (err) {
-                            console.error(`Error loading image for worm ${wormData.worm_id}:`, err);
+                            console.error(`Error loading image for worm ${item.worm.wormId}:`, err);
                         }
-                        
-                        tileState.wormImages.push({
-                            wormId: wormData.worm_id,
-                            videoPath: wormData.video_path,
-                            videoName: wormData.video_name,
-                            folderName: wormData.folder_name,
-                            imageUrl: imageUrl,
-                            wormData: wormData
-                        });
+                        tileState.wormImages[item.index].loaded = true;
                     }
+                    renderTileGrid();
                 }
             }
-            
-            tileState.loadingImages = false;
-            renderTileGrid();
         }
         
         function renderTileGrid() {
@@ -3855,22 +4109,24 @@
                 const qcColor = frame.qcComplete ? '#4ecca3' : '#ff8844';
                 const qcLabel = frame.qcComplete ? '✓ QC' : '⊘ QC';
                 
-                // Image area
+                // Image area - height adapts to grid size
+                const imgMaxHeight = Math.max(120, Math.floor(400 / tileState.gridSize));
                 const imgContainer = document.createElement('div');
                 imgContainer.style.cssText = `
                     flex: 1;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    min-height: 150px;
+                    min-height: ${Math.max(80, imgMaxHeight - 30)}px;
                     background: #0f0f1a;
                     position: relative;
+                    overflow: hidden;
                 `;
                 
                 if (frame.imageUrl) {
                     const img = document.createElement('img');
                     img.src = frame.imageUrl;
-                    img.style.cssText = 'max-width: 100%; max-height: 200px; object-fit: contain;';
+                    img.style.cssText = `max-width: 100%; max-height: 100%; width: 100%; object-fit: contain;`;
                     imgContainer.appendChild(img);
                 } else {
                     imgContainer.innerHTML = `<span style="color: #555; font-size: 11px;">No image</span>`;
@@ -3965,7 +4221,9 @@
                 
                 // Click to navigate to the video
                 tile.onclick = async () => {
-                    // Close modal first
+                    // Save state before closing
+                    saveTileState();
+                    // Close modal
                     document.getElementById('tile-qc-modal').classList.remove('show');
                     
                     // Helper to update state after navigation
@@ -4073,10 +4331,11 @@
                     border-radius: 8px;
                     overflow: hidden;
                     cursor: pointer;
-                    transition: transform 0.15s, box-shadow 0.15s;
+                    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
                     display: flex;
                     flex-direction: column;
                     border: 2px solid ${isCurrentWorm ? '#4ecca3' : 'transparent'};
+                    opacity: ${worm.wormData.censored ? '0.6' : '1'};
                 `;
                 
                 // Health class badge color
@@ -4088,22 +4347,24 @@
                     healthColor = healthColors[worm.wormData.health_class] || '#888';
                 }
                 
-                // Image area
+                // Image area - height adapts to grid size
+                const imgMaxHeight = Math.max(80, Math.floor(300 / tileState.gridSize));
                 const imgContainer = document.createElement('div');
                 imgContainer.style.cssText = `
                     flex: 1;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    min-height: 100px;
+                    min-height: ${Math.max(60, imgMaxHeight - 20)}px;
                     background: #0f0f1a;
                     position: relative;
+                    overflow: hidden;
                 `;
                 
                 if (worm.imageUrl) {
                     const img = document.createElement('img');
                     img.src = worm.imageUrl;
-                    img.style.cssText = 'max-width: 100%; max-height: 150px; object-fit: contain;';
+                    img.style.cssText = `max-width: 100%; max-height: 100%; width: 100%; object-fit: contain;`;
                     imgContainer.appendChild(img);
                 } else {
                     imgContainer.innerHTML = `<span style="color: #555; font-size: 11px;">No ${tileState.showType}</span>`;
@@ -4137,17 +4398,102 @@
                     color: ${healthColor};
                     font-weight: bold;
                     font-size: 10px;
+                    cursor: pointer;
                 `;
                 healthBadge.textContent = healthLabel;
+                healthBadge.title = 'Click to change health class (A-E)';
+                
+                // Click on health badge to cycle through classes
+                healthBadge.onclick = async (e) => {
+                    e.stopPropagation();  // Don't trigger tile click
+                    const classes = ['A', 'B', 'C', 'D', 'E'];
+                    const healthColors = { 'A': '#00ff00', 'B': '#88ff00', 'C': '#ffff00', 'D': '#ff8800', 'E': '#ff0000' };
+                    const currentClass = worm.wormData.health_class || null;
+                    const currentIdx = currentClass ? classes.indexOf(currentClass) : -1;
+                    const nextIdx = (currentIdx + 1) % classes.length;
+                    const newClass = classes[nextIdx];
+                    
+                    try {
+                        const result = await api('/tile/health_class', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                video_path: worm.videoPath,
+                                worm_id: worm.wormId,
+                                health_class: newClass
+                            })
+                        });
+                        
+                        if (result.success) {
+                            // Update local data
+                            worm.wormData.health_class = newClass;
+                            // Update badge appearance
+                            const newColor = healthColors[newClass];
+                            healthBadge.style.background = newColor + '30';
+                            healthBadge.style.color = newColor;
+                            healthBadge.textContent = newClass;
+                            setStatus(`Worm #${displayWormId(worm.wormId)} health class set to ${newClass}`);
+                        }
+                    } catch (err) {
+                        setStatus('Error updating health class: ' + err.message);
+                    }
+                };
                 
                 const statusIcons = document.createElement('span');
-                statusIcons.style.color = '#666';
+                statusIcons.style.cssText = 'color: #666; display: flex; align-items: center; gap: 2px;';
+                
+                // Status icons (non-clickable)
                 let icons = [];
                 if (worm.wormData.has_mask) icons.push('🪱');
                 if (worm.wormData.has_head) icons.push('🟢');
                 if (worm.wormData.has_tail) icons.push('🔴');
-                if (worm.wormData.censored) icons.push('🚫');
-                statusIcons.textContent = icons.join('');
+                
+                const iconsSpan = document.createElement('span');
+                iconsSpan.textContent = icons.join('');
+                statusIcons.appendChild(iconsSpan);
+                
+                // Censor toggle button
+                const censorBtn = document.createElement('span');
+                censorBtn.style.cssText = `
+                    cursor: pointer;
+                    padding: 1px 3px;
+                    border-radius: 3px;
+                    font-size: 10px;
+                    ${worm.wormData.censored ? 'background: #e9456030; color: #e94560;' : 'background: transparent; color: #666;'}
+                `;
+                censorBtn.textContent = '🚫';
+                censorBtn.title = worm.wormData.censored ? 'Click to uncensor' : 'Click to censor';
+                
+                censorBtn.onclick = async (e) => {
+                    e.stopPropagation();  // Don't trigger tile click
+                    const newCensored = !worm.wormData.censored;
+                    
+                    try {
+                        const result = await api('/tile/censor', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                video_path: worm.videoPath,
+                                worm_id: worm.wormId,
+                                censored: newCensored
+                            })
+                        });
+                        
+                        if (result.success) {
+                            // Update local data
+                            worm.wormData.censored = newCensored;
+                            // Update button appearance
+                            censorBtn.style.background = newCensored ? '#e9456030' : 'transparent';
+                            censorBtn.style.color = newCensored ? '#e94560' : '#666';
+                            censorBtn.title = newCensored ? 'Click to uncensor' : 'Click to censor';
+                            // Update tile border if censored
+                            tile.style.opacity = newCensored ? '0.6' : '1';
+                            setStatus(`Worm #${displayWormId(worm.wormId)} ${newCensored ? 'censored' : 'uncensored'}`);
+                        }
+                    } catch (err) {
+                        setStatus('Error toggling censor: ' + err.message);
+                    }
+                };
+                
+                statusIcons.appendChild(censorBtn);
                 
                 row1.appendChild(wormLabel);
                 row1.appendChild(healthBadge);
@@ -4179,7 +4525,9 @@
                 
                 // Click to navigate to the worm
                 tile.onclick = async () => {
-                    // Close modal first
+                    // Save state before closing
+                    saveTileState();
+                    // Close modal
                     document.getElementById('tile-qc-modal').classList.remove('show');
                     
                     // Helper to update state after navigation
@@ -5681,6 +6029,11 @@
                 case 'Backspace':
                     if (state.currentWormId !== null) {
                         deleteSelectedWorm();
+                    }
+                    break;
+                case 'x':  // Censor/uncensor selected worm
+                    if (state.currentWormId !== null) {
+                        toggleCensor(state.currentWormId);
                     }
                     break;
                 case 'Escape':

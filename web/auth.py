@@ -17,7 +17,24 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Configuration
 AUTH_FILE = Path(__file__).parent / "users.json"
+USER_PREFS_FILE = Path(__file__).parent / "user_preferences.json"
 SESSION_EXPIRY_HOURS = 24
+
+
+@dataclass
+class UserPreferences:
+    """Per-user preferences and state."""
+    username: str
+    last_project_path: str = ""
+    last_folder_index: int = 0
+    last_video_index: int = 0
+    
+    def to_dict(self):
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(**data)
 
 
 @dataclass
@@ -42,7 +59,9 @@ class AuthManager:
     def __init__(self):
         self.users: Dict[str, User] = {}
         self.sessions: Dict[str, dict] = {}  # token -> {username, expires}
+        self.user_prefs: Dict[str, UserPreferences] = {}  # username -> preferences
         self._load_users()
+        self._load_user_prefs()
     
     def _load_users(self):
         """Load users from JSON file."""
@@ -67,6 +86,44 @@ class AuthManager:
         }
         with open(AUTH_FILE, 'w') as f:
             json.dump(data, f, indent=2)
+    
+    def _load_user_prefs(self):
+        """Load user preferences from JSON file."""
+        if USER_PREFS_FILE.exists():
+            try:
+                with open(USER_PREFS_FILE, 'r') as f:
+                    data = json.load(f)
+                    for username, prefs_data in data.items():
+                        self.user_prefs[username] = UserPreferences.from_dict(prefs_data)
+                print(f"Loaded preferences for {len(self.user_prefs)} users")
+            except Exception as e:
+                print(f"Error loading user preferences: {e}")
+    
+    def _save_user_prefs(self):
+        """Save user preferences to JSON file."""
+        data = {username: prefs.to_dict() for username, prefs in self.user_prefs.items()}
+        with open(USER_PREFS_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    
+    def get_user_prefs(self, username: str) -> UserPreferences:
+        """Get preferences for a user, creating default if needed."""
+        if username not in self.user_prefs:
+            self.user_prefs[username] = UserPreferences(username=username)
+        return self.user_prefs[username]
+    
+    def save_user_prefs(self, username: str, project_path: str = None, 
+                        folder_index: int = None, video_index: int = None):
+        """Update and save user preferences."""
+        prefs = self.get_user_prefs(username)
+        
+        if project_path is not None:
+            prefs.last_project_path = project_path
+        if folder_index is not None:
+            prefs.last_folder_index = folder_index
+        if video_index is not None:
+            prefs.last_video_index = video_index
+        
+        self._save_user_prefs()
     
     def _create_default_admin(self):
         """Create default admin account."""

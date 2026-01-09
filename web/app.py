@@ -9,6 +9,7 @@ import base64
 import asyncio
 import hashlib
 import io
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 from contextlib import asynccontextmanager
@@ -806,7 +807,7 @@ def straighten_worm(image: np.ndarray, mask: np.ndarray, width: int = None) -> T
 def auto_segment_worm(worm_id: int, bbox: tuple, return_mask_bounds: bool = False):
     """
     Automatically segment a worm using SAM when a detection box is created.
-    Also adjusts the detection box to fit the segmentation mask.
+    Also adjusts the detection box to fit the segmentation mask and classifies health.
     
     Args:
         worm_id: The worm ID
@@ -845,6 +846,10 @@ def auto_segment_worm(worm_id: int, bbox: tuple, return_mask_bounds: bool = Fals
         # Adjust detection box to fit the mask
         _adjust_detection_box_to_mask(worm_id, result.mask)
         
+        # Auto-classify health now that we have segmentation and frame loaded
+        if state.health_classifier is not None and state.health_classifier.is_loaded():
+            classify_worm_health(worm_id)
+        
         # Calculate mask bounding box if requested
         mask_bbox = None
         if return_mask_bounds:
@@ -862,7 +867,7 @@ def auto_segment_worm(worm_id: int, bbox: tuple, return_mask_bounds: bool = Fals
 def auto_segment_worm_no_set_image(worm_id: int, bbox: tuple) -> bool:
     """
     Segment a worm using SAM - assumes set_image was already called.
-    Also adjusts the detection box to fit the segmentation mask.
+    Also adjusts the detection box to fit the segmentation mask and classifies health.
     Returns True if segmentation was successful, False otherwise.
     """
     if state.sam_segmenter is None or not state.sam_segmenter.is_loaded():
@@ -893,6 +898,10 @@ def auto_segment_worm_no_set_image(worm_id: int, bbox: tuple) -> bool:
         
         # Adjust detection box to fit the mask
         _adjust_detection_box_to_mask(worm_id, result.mask)
+        
+        # Auto-classify health now that we have segmentation and frame loaded
+        if state.health_classifier is not None and state.health_classifier.is_loaded():
+            classify_worm_health(worm_id)
         
         return True
     except Exception as e:
@@ -1227,6 +1236,84 @@ async def get_me(user: dict = Depends(require_auth)):
     }
 
 
+@app.get("/api/user/preferences")
+async def get_user_preferences(user: dict = Depends(require_auth)):
+    """Get user's saved preferences (last project, folder, video)."""
+    prefs = auth_manager.get_user_prefs(user["username"])
+    return {
+        "username": prefs.username,
+        "last_project_path": prefs.last_project_path,
+        "last_folder_index": prefs.last_folder_index,
+        "last_video_index": prefs.last_video_index
+    }
+
+
+@app.post("/api/user/preferences")
+async def save_user_preferences(user: dict = Depends(require_auth)):
+    """Save current state as user preferences."""
+    project_path = None
+    folder_index = 0
+    video_index = 0
+    
+    if state.annotation_manager:
+        project_path = state.annotation_manager.base_folder
+    
+    if state.video_handler:
+        folder_index = state.video_handler.get_current_folder_index()
+        video_index = state.video_handler.current_index
+    
+    auth_manager.save_user_prefs(
+        user["username"],
+        project_path=project_path,
+        folder_index=folder_index,
+        video_index=video_index
+    )
+    
+    return {
+        "success": True,
+        "project_path": project_path,
+        "folder_index": folder_index,
+        "video_index": video_index
+    }
+
+
+@app.post("/api/user/restore")
+async def restore_user_session(user: dict = Depends(require_auth)):
+    """Restore user's last session (load their last project/folder/video)."""
+    prefs = auth_manager.get_user_prefs(user["username"])
+    
+    if not prefs.last_project_path or not Path(prefs.last_project_path).exists():
+        return {
+            "success": False,
+            "message": "No saved session or project no longer exists"
+        }
+    
+    # Load the project
+    state.video_handler = VideoHandler()
+    state.video_handler.load_folder(prefs.last_project_path, recursive=True)
+    
+    state.annotation_manager = AnnotationManager()
+    state.annotation_manager.set_folder(prefs.last_project_path)
+    
+    # Navigate to the saved folder
+    if prefs.last_folder_index > 0:
+        state.video_handler.navigate_to_folder(prefs.last_folder_index)
+    
+    # Navigate to the saved video
+    if prefs.last_video_index > 0:
+        state.video_handler.navigate_to(prefs.last_video_index)
+    
+    _load_current_video()
+    
+    return {
+        "success": True,
+        "project_path": prefs.last_project_path,
+        "folder_index": state.video_handler.get_current_folder_index(),
+        "video_index": state.video_handler.current_index,
+        "folder_info": _get_folder_info()
+    }
+
+
 # ------ Admin Routes ------
 
 @app.get("/api/admin/users")
@@ -1465,6 +1552,14 @@ async def open_folder(folder: FolderPath, user: dict = Depends(require_auth)):
         state.video_handler.navigate_to(0)
         _load_current_video()
     
+    # Save user's project preference
+    auth_manager.save_user_prefs(
+        user["username"],
+        project_path=folder.path,
+        folder_index=0,
+        video_index=0
+    )
+    
     return {
         "success": True,
         "video_count": video_count,
@@ -1516,6 +1611,14 @@ async def select_video(index: int, user: dict = Depends(require_auth)):
     
     if state.video_handler.navigate_to(index):
         _load_current_video()
+        
+        # Save user's position
+        auth_manager.save_user_prefs(
+            user["username"],
+            folder_index=state.video_handler.get_current_folder_index(),
+            video_index=index
+        )
+        
         return await get_current_frame()
     
     raise HTTPException(status_code=404, detail="Video not found")
@@ -2393,6 +2496,108 @@ async def segment_all_worms(user: dict = Depends(require_auth)):
     }
 
 
+@app.post("/api/classify/all")
+async def classify_all_health(
+    source: str = "current_video",
+    user: dict = Depends(require_auth)
+):
+    """
+    Classify health for all worms that have masks but no health score.
+    
+    Args:
+        source: "current_video", "current_folder", or "all_folders"
+    """
+    if state.health_classifier is None or not state.health_classifier.is_loaded():
+        raise HTTPException(status_code=400, detail="Health classifier not loaded")
+    if state.annotation_manager is None:
+        raise HTTPException(status_code=400, detail="No folder loaded")
+    if state.video_handler is None:
+        raise HTTPException(status_code=400, detail="No video handler")
+    
+    results = {
+        "processed": 0,
+        "classified": 0,
+        "skipped": 0,
+        "failed": 0
+    }
+    
+    # Build list of videos to process
+    videos_to_process = []
+    
+    if source == "current_video":
+        if state.current_video_path:
+            videos_to_process = [state.current_video_path]
+    elif source == "current_folder":
+        current_folder_path = str(state.video_handler.current_folder) if state.video_handler.current_folder else None
+        if current_folder_path:
+            videos_to_process = [str(v) for v in state.video_handler.videos_by_folder.get(current_folder_path, [])]
+    elif source == "all_folders":
+        for folder_info in state.video_handler.folder_list:
+            folder_videos = state.video_handler.videos_by_folder.get(str(folder_info.path), [])
+            videos_to_process.extend([str(v) for v in folder_videos])
+    
+    for video_path in videos_to_process:
+        video_annots = state.annotation_manager.annotations.get(video_path)
+        if not video_annots:
+            continue
+        
+        # Load frame for this video
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            continue
+        ret, frame = cap.read()
+        cap.release()
+        if not ret or frame is None:
+            continue
+        
+        for worm_id, annot in video_annots.annotations.items():
+            results["processed"] += 1
+            
+            # Skip if already has health class
+            if annot.health_class is not None:
+                results["skipped"] += 1
+                continue
+            
+            # Skip if no mask (health requires visual context)
+            if not annot.segmentation_mask_path or not Path(annot.segmentation_mask_path).exists():
+                results["skipped"] += 1
+                continue
+            
+            # Skip if no detection box
+            if not annot.detection_box:
+                results["skipped"] += 1
+                continue
+            
+            try:
+                # Classify health using the video frame
+                score, classification = state.health_classifier.classify_from_frame(
+                    frame, 
+                    annot.detection_box
+                )
+                
+                if score is not None:
+                    annot.health_score = score
+                    annot.health_classification = classification
+                    annot.health_class = score_to_health_class(score)
+                    annot.modified_by = user["username"]
+                    annot.modified_at = datetime.now().isoformat()
+                    results["classified"] += 1
+                else:
+                    results["failed"] += 1
+            except Exception as e:
+                print(f"Health classification failed for {video_path} worm {worm_id}: {e}")
+                results["failed"] += 1
+    
+    # Save all changes
+    state.annotation_manager._unsaved_changes = True
+    state.annotation_manager.save_annotations()
+    
+    return {
+        "success": True,
+        **results
+    }
+
+
 @app.post("/api/brush-mask")
 async def apply_brush_to_mask(request: BrushMaskRequest, user: dict = Depends(require_auth)):
     """Apply brush strokes to refine a segmentation mask."""
@@ -2516,7 +2721,7 @@ async def set_head_box(box: BoundingBox, user: dict = Depends(require_auth)):
         raise HTTPException(status_code=400, detail="worm_id required")
     
     coords = (box.x1, box.y1, box.x2, box.y2)
-    state.annotation_manager.set_head_box(state.current_video_path, box.worm_id, coords)
+    state.annotation_manager.set_head_box(state.current_video_path, box.worm_id, coords, modified_by=user["username"])
     state.annotation_manager.save_annotations()
     
     return {"success": True, "worm_id": box.worm_id, "head_box": coords}
@@ -2532,7 +2737,7 @@ async def set_tail_box(box: BoundingBox, user: dict = Depends(require_auth)):
         raise HTTPException(status_code=400, detail="worm_id required")
     
     coords = (box.x1, box.y1, box.x2, box.y2)
-    state.annotation_manager.set_tail_box(state.current_video_path, box.worm_id, coords)
+    state.annotation_manager.set_tail_box(state.current_video_path, box.worm_id, coords, modified_by=user["username"])
     state.annotation_manager.save_annotations()
     
     return {"success": True, "worm_id": box.worm_id, "tail_box": coords}
@@ -2548,7 +2753,7 @@ async def set_detection_box_endpoint(box: BoundingBox, user: dict = Depends(requ
         raise HTTPException(status_code=400, detail="worm_id required")
     
     coords = (box.x1, box.y1, box.x2, box.y2)
-    state.annotation_manager.set_detection_box(state.current_video_path, box.worm_id, coords)
+    state.annotation_manager.set_detection_box(state.current_video_path, box.worm_id, coords, modified_by=user["username"])
     state.annotation_manager.save_annotations()
     
     return {"success": True, "worm_id": box.worm_id, "detection_box": coords}
@@ -2563,7 +2768,7 @@ async def set_head_line(box: BoundingBox, user: dict = Depends(require_auth)):
         raise HTTPException(status_code=400, detail="worm_id required")
     
     coords = (box.x1, box.y1, box.x2, box.y2)
-    state.annotation_manager.set_head_line(state.current_video_path, box.worm_id, coords)
+    state.annotation_manager.set_head_line(state.current_video_path, box.worm_id, coords, modified_by=user["username"])
     state.annotation_manager.save_annotations()
     
     return {"success": True, "worm_id": box.worm_id, "head_line": coords}
@@ -2579,7 +2784,7 @@ async def set_tail_line(box: BoundingBox, user: dict = Depends(require_auth)):
         raise HTTPException(status_code=400, detail="worm_id required")
     
     coords = (box.x1, box.y1, box.x2, box.y2)
-    state.annotation_manager.set_tail_line(state.current_video_path, box.worm_id, coords)
+    state.annotation_manager.set_tail_line(state.current_video_path, box.worm_id, coords, modified_by=user["username"])
     state.annotation_manager.save_annotations()
     
     return {"success": True, "worm_id": box.worm_id, "tail_line": coords}
@@ -2618,7 +2823,7 @@ async def toggle_worm_censored(worm_id: int, request: Request, user: dict = Depe
     except:
         new_status = not annot.censored
     
-    state.annotation_manager.set_worm_censored(state.current_video_path, worm_id, new_status)
+    state.annotation_manager.set_worm_censored(state.current_video_path, worm_id, new_status, modified_by=user["username"])
     state.annotation_manager.save_annotations()
     
     return {"success": True, "worm_id": worm_id, "censored": new_status}
@@ -2651,6 +2856,8 @@ async def set_worm_health_class(worm_id: int, request: Request, user: dict = Dep
     annot.health_class = health_class
     annot.health_score = health_class_to_score(health_class)
     annot.health_classification = "Healthy" if annot.health_score < 0.5 else "Leaky"
+    annot.modified_by = user["username"]
+    annot.modified_at = datetime.now().isoformat()
     
     state.annotation_manager._unsaved_changes = True
     state.annotation_manager.save_annotations()
@@ -2660,7 +2867,106 @@ async def set_worm_health_class(worm_id: int, request: Request, user: dict = Dep
         "worm_id": worm_id, 
         "health_class": health_class,
         "health_score": annot.health_score,
-        "health_classification": annot.health_classification
+        "health_classification": annot.health_classification,
+        "modified_by": annot.modified_by,
+        "modified_at": annot.modified_at
+    }
+
+
+@app.post("/api/tile/health_class")
+async def set_tile_worm_health_class(request: Request, user: dict = Depends(require_auth)):
+    """Set health class for a worm in tile view (works for any video)."""
+    if state.annotation_manager is None:
+        raise HTTPException(status_code=400, detail="No folder loaded")
+    
+    try:
+        body = await request.json()
+        video_path = body.get('video_path')
+        worm_id = body.get('worm_id')
+        health_class = body.get('health_class', '').upper()
+    except:
+        raise HTTPException(status_code=400, detail="Invalid request body")
+    
+    if not video_path or worm_id is None:
+        raise HTTPException(status_code=400, detail="Missing video_path or worm_id")
+    
+    video_annots = state.annotation_manager.annotations.get(video_path)
+    if not video_annots:
+        raise HTTPException(status_code=404, detail="No annotations for video")
+    
+    annot = video_annots.annotations.get(worm_id)
+    if not annot:
+        raise HTTPException(status_code=404, detail=f"Worm {worm_id} not found")
+    
+    if health_class not in ['A', 'B', 'C', 'D', 'E']:
+        raise HTTPException(status_code=400, detail="Invalid health class. Must be A, B, C, D, or E")
+    
+    # Update the annotation
+    annot.health_class = health_class
+    annot.health_score = health_class_to_score(health_class)
+    annot.health_classification = "Healthy" if annot.health_score < 0.5 else "Leaky"
+    annot.modified_by = user["username"]
+    annot.modified_at = datetime.now().isoformat()
+    
+    state.annotation_manager._unsaved_changes = True
+    state.annotation_manager.save_annotations()
+    
+    return {
+        "success": True, 
+        "video_path": video_path,
+        "worm_id": worm_id, 
+        "health_class": health_class,
+        "health_score": annot.health_score,
+        "health_classification": annot.health_classification,
+        "modified_by": annot.modified_by,
+        "modified_at": annot.modified_at
+    }
+
+
+@app.post("/api/tile/censor")
+async def set_tile_worm_censor(request: Request, user: dict = Depends(require_auth)):
+    """Set censored status for a worm in tile view (works for any video)."""
+    if state.annotation_manager is None:
+        raise HTTPException(status_code=400, detail="No folder loaded")
+    
+    try:
+        body = await request.json()
+        video_path = body.get('video_path')
+        worm_id = body.get('worm_id')
+        censored = body.get('censored')
+    except:
+        raise HTTPException(status_code=400, detail="Invalid request body")
+    
+    if not video_path or worm_id is None:
+        raise HTTPException(status_code=400, detail="Missing video_path or worm_id")
+    
+    video_annots = state.annotation_manager.annotations.get(video_path)
+    if not video_annots:
+        raise HTTPException(status_code=404, detail="No annotations for video")
+    
+    annot = video_annots.annotations.get(worm_id)
+    if not annot:
+        raise HTTPException(status_code=404, detail=f"Worm {worm_id} not found")
+    
+    # Toggle if not specified
+    if censored is None:
+        censored = not annot.censored
+    
+    # Update the annotation
+    annot.censored = censored
+    annot.modified_by = user["username"]
+    annot.modified_at = datetime.now().isoformat()
+    
+    state.annotation_manager._unsaved_changes = True
+    state.annotation_manager.save_annotations()
+    
+    return {
+        "success": True, 
+        "video_path": video_path,
+        "worm_id": worm_id, 
+        "censored": censored,
+        "modified_by": annot.modified_by,
+        "modified_at": annot.modified_at
     }
 
 
@@ -3770,6 +4076,66 @@ async def get_batch_worm_images(
                         straightened_rgb = cv2.cvtColor(straightened, cv2.COLOR_BGR2RGB)
                         img_b64 = encode_image_to_base64(straightened_rgb, request.quality)
             
+            elif request.show_type == "mask":
+                # Show worm on white background using mask
+                if annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                    mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                    if mask is not None:
+                        # Find bounding box of mask
+                        coords = np.where(mask > 127)
+                        if len(coords[0]) > 0:
+                            y1, y2 = coords[0].min(), coords[0].max() + 1
+                            x1, x2 = coords[1].min(), coords[1].max() + 1
+                            
+                            mask_crop = mask[y1:y2, x1:x2]
+                            img_crop = frame[y1:y2, x1:x2].copy()
+                            
+                            result = np.full_like(img_crop, 255)
+                            result[mask_crop > 127] = img_crop[mask_crop > 127]
+                            result_rgb = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+                            img_b64 = encode_image_to_base64(result_rgb, request.quality)
+            
+            elif request.show_type == "annotated":
+                # Annotated view with mask contour, head/tail boxes, and label
+                if annot.detection_box:
+                    x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
+                    pad_x = int((x2 - x1) * 0.1)
+                    pad_y = int((y2 - y1) * 0.1)
+                    x1, y1 = max(0, x1 - pad_x), max(0, y1 - pad_y)
+                    x2, y2 = min(w, x2 + pad_x), min(h, y2 + pad_y)
+                    
+                    crop = frame[y1:y2, x1:x2].copy()
+                    offset_x, offset_y = x1, y1
+                    
+                    # Draw mask contour if requested
+                    if request.show_mask and annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                        mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                        if mask is not None:
+                            mask_crop = mask[y1:y2, x1:x2]
+                            contours, _ = cv2.findContours(mask_crop, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                            if contours:
+                                cv2.drawContours(crop, contours, -1, (0, 255, 0), 1)
+                    
+                    # Draw head box
+                    if annot.head_box:
+                        hx1, hy1, hx2, hy2 = [int(c) for c in annot.head_box]
+                        cv2.rectangle(crop, (hx1 - offset_x, hy1 - offset_y), (hx2 - offset_x, hy2 - offset_y), (0, 255, 0), 1)
+                    
+                    # Draw tail box
+                    if annot.tail_box:
+                        tx1, ty1, tx2, ty2 = [int(c) for c in annot.tail_box]
+                        cv2.rectangle(crop, (tx1 - offset_x, ty1 - offset_y), (tx2 - offset_x, ty2 - offset_y), (0, 0, 255), 1)
+                    
+                    # Add label
+                    label_parts = [f"#{worm_id}"]
+                    if annot.health_class:
+                        label_parts.append(annot.health_class)
+                    label = " ".join(label_parts)
+                    cv2.putText(crop, label, (3, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
+                    
+                    crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+                    img_b64 = encode_image_to_base64(crop_rgb, request.quality)
+            
             elif request.show_type in ["crop", "labeled_crop"]:
                 x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
                 pad_x = int((x2 - x1) * 0.1)
@@ -3863,43 +4229,87 @@ async def get_batch_frame_images(
             
             h, w = frame.shape[:2]
             
-            if request.show_annotations and state.annotation_manager:
+            if state.annotation_manager:
                 video_annots = state.annotation_manager.annotations.get(video_path)
                 if video_annots:
-                    for worm_id, annot in video_annots.annotations.items():
-                        if annot.detection_box:
-                            x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
-                            
-                            color = (0, 255, 0)
-                            if annot.health_class == "Healthy":
-                                color = (0, 255, 0)
-                            elif annot.health_class == "Slightly Unhealthy":
-                                color = (0, 255, 255)
-                            elif annot.health_class == "Unhealthy":
-                                color = (0, 165, 255)
-                            elif annot.health_class == "Very Unhealthy":
-                                color = (0, 0, 255)
-                            
-                            if annot.censored:
-                                color = (128, 128, 128)
-                            
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                            
-                            label_parts = [f"#{worm_id}"]
-                            if annot.health_class:
-                                label_parts.append(annot.health_class[:1])
-                            label = " ".join(label_parts)
-                            
-                            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                            cv2.rectangle(frame, (x1, y1 - th - 4), (x1 + tw + 4, y1), color, -1)
-                            cv2.putText(frame, label, (x1 + 2, y1 - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                    # First pass: draw filled masks if show_mask is True
+                    if request.show_mask:
+                        mask_overlay = frame.copy()
+                        for worm_id, annot in video_annots.annotations.items():
+                            if annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                                mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                                if mask is not None:
+                                    # Color based on health class
+                                    color = (0, 255, 0)  # Default green BGR
+                                    if annot.health_class == "Healthy":
+                                        color = (0, 255, 0)  # Green
+                                    elif annot.health_class == "Slightly Unhealthy":
+                                        color = (0, 255, 255)  # Yellow
+                                    elif annot.health_class == "Unhealthy":
+                                        color = (0, 165, 255)  # Orange
+                                    elif annot.health_class == "Very Unhealthy":
+                                        color = (0, 0, 255)  # Red
+                                    
+                                    if annot.censored:
+                                        color = (128, 128, 128)
+                                    
+                                    # Fill mask area with color
+                                    mask_overlay[mask > 127] = color
                         
-                        if request.show_mask and annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
-                            mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
-                            if mask is not None:
-                                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                                if contours:
-                                    cv2.drawContours(frame, contours, -1, (255, 255, 255), 1)
+                        # Blend with original frame (40% mask, 60% original)
+                        frame = cv2.addWeighted(frame, 0.6, mask_overlay, 0.4, 0)
+                    
+                    # Second pass: draw boxes, labels, head/tail markers (if show_annotations)
+                    if request.show_annotations:
+                        for worm_id, annot in video_annots.annotations.items():
+                            if annot.detection_box:
+                                x1, y1, x2, y2 = [int(c) for c in annot.detection_box]
+                                
+                                color = (0, 255, 0)
+                                if annot.health_class == "Healthy":
+                                    color = (0, 255, 0)
+                                elif annot.health_class == "Slightly Unhealthy":
+                                    color = (0, 255, 255)
+                                elif annot.health_class == "Unhealthy":
+                                    color = (0, 165, 255)
+                                elif annot.health_class == "Very Unhealthy":
+                                    color = (0, 0, 255)
+                                
+                                if annot.censored:
+                                    color = (128, 128, 128)
+                                
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                                
+                                label_parts = [f"#{worm_id}"]
+                                if annot.health_class:
+                                    label_parts.append(annot.health_class[:1])
+                                label = " ".join(label_parts)
+                                
+                                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                                cv2.rectangle(frame, (x1, y1 - th - 4), (x1 + tw + 4, y1), color, -1)
+                                cv2.putText(frame, label, (x1 + 2, y1 - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                                
+                                # Draw head marker
+                                if annot.head_box:
+                                    hx1, hy1, hx2, hy2 = [int(c) for c in annot.head_box]
+                                    hcx, hcy = (hx1 + hx2) // 2, (hy1 + hy2) // 2
+                                    cv2.circle(frame, (hcx, hcy), 5, (0, 255, 0), -1)
+                                    cv2.circle(frame, (hcx, hcy), 6, (255, 255, 255), 1)
+                                
+                                # Draw tail marker
+                                if annot.tail_box:
+                                    tx1, ty1, tx2, ty2 = [int(c) for c in annot.tail_box]
+                                    tcx, tcy = (tx1 + tx2) // 2, (ty1 + ty2) // 2
+                                    cv2.circle(frame, (tcx, tcy), 5, (0, 0, 255), -1)
+                                    cv2.circle(frame, (tcx, tcy), 6, (255, 255, 255), 1)
+                            
+                            # Draw mask contour (always draw contours for visibility)
+                            if annot.segmentation_mask_path and Path(annot.segmentation_mask_path).exists():
+                                mask = cv2.imread(annot.segmentation_mask_path, cv2.IMREAD_GRAYSCALE)
+                                if mask is not None:
+                                    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                                    if contours:
+                                        cv2.drawContours(frame, contours, -1, (255, 255, 255), 1)
             
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img_b64 = encode_image_to_base64(frame_rgb, request.quality)
@@ -5495,6 +5905,13 @@ async def navigate(direction: str, user: dict = Depends(require_auth)):
     if success:
         _load_current_video()
         
+        # Save user's position for session restore
+        auth_manager.save_user_prefs(
+            user["username"],
+            folder_index=state.video_handler.get_current_folder_index(),
+            video_index=state.video_handler.current_index
+        )
+        
         # Auto-detect based on whether folder changed
         auto_detected = False
         folder_detection_stats = None
@@ -5576,6 +5993,14 @@ async def select_folder(index: int, user: dict = Depends(require_auth)):
     
     if state.video_handler.navigate_to_folder(index):
         _load_current_video()
+        
+        # Save user's folder position
+        auth_manager.save_user_prefs(
+            user["username"],
+            folder_index=index,
+            video_index=state.video_handler.current_index
+        )
+        
         result = await get_current_frame(user)
         result["folder_info"] = _get_folder_info()
         return result
