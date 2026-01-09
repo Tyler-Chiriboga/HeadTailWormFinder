@@ -4390,28 +4390,41 @@
                 wormLabel.style.fontWeight = 'bold';
                 wormLabel.textContent = `#${displayWormId(worm.wormId)}`;
                 
-                const healthBadge = document.createElement('span');
-                healthBadge.style.cssText = `
+                // Health class dropdown
+                const healthDropdown = document.createElement('select');
+                healthDropdown.style.cssText = `
                     padding: 2px 5px;
                     border-radius: 3px;
                     background: ${healthColor}30;
                     color: ${healthColor};
+                    border: 1px solid ${healthColor}60;
                     font-weight: bold;
                     font-size: 10px;
                     cursor: pointer;
+                    outline: none;
                 `;
-                healthBadge.textContent = healthLabel;
-                healthBadge.title = 'Click to change health class (A-E)';
+                healthDropdown.title = 'Select health class';
                 
-                // Click on health badge to cycle through classes
-                healthBadge.onclick = async (e) => {
+                // Add options
+                const classes = ['', 'A', 'B', 'C', 'D', 'E'];
+                const healthColors = { 'A': '#00ff00', 'B': '#88ff00', 'C': '#ffff00', 'D': '#ff8800', 'E': '#ff0000' };
+                classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls;
+                    option.textContent = cls || '-';
+                    option.selected = cls === (worm.wormData.health_class || '');
+                    healthDropdown.appendChild(option);
+                });
+                
+                // Handle selection change
+                healthDropdown.onchange = async (e) => {
                     e.stopPropagation();  // Don't trigger tile click
-                    const classes = ['A', 'B', 'C', 'D', 'E'];
-                    const healthColors = { 'A': '#00ff00', 'B': '#88ff00', 'C': '#ffff00', 'D': '#ff8800', 'E': '#ff0000' };
-                    const currentClass = worm.wormData.health_class || null;
-                    const currentIdx = currentClass ? classes.indexOf(currentClass) : -1;
-                    const nextIdx = (currentIdx + 1) % classes.length;
-                    const newClass = classes[nextIdx];
+                    const newClass = e.target.value;
+                    
+                    if (!newClass) {
+                        setStatus('Please select a valid health class');
+                        return;
+                    }
                     
                     try {
                         const result = await api('/tile/health_class', {
@@ -4426,17 +4439,20 @@
                         if (result.success) {
                             // Update local data
                             worm.wormData.health_class = newClass;
-                            // Update badge appearance
+                            // Update dropdown appearance
                             const newColor = healthColors[newClass];
-                            healthBadge.style.background = newColor + '30';
-                            healthBadge.style.color = newColor;
-                            healthBadge.textContent = newClass;
+                            healthDropdown.style.background = newColor + '30';
+                            healthDropdown.style.color = newColor;
+                            healthDropdown.style.borderColor = newColor + '60';
                             setStatus(`Worm #${displayWormId(worm.wormId)} health class set to ${newClass}`);
                         }
                     } catch (err) {
                         setStatus('Error updating health class: ' + err.message);
                     }
                 };
+                
+                // Prevent click from bubbling to tile
+                healthDropdown.onclick = (e) => e.stopPropagation();
                 
                 const statusIcons = document.createElement('span');
                 statusIcons.style.cssText = 'color: #666; display: flex; align-items: center; gap: 2px;';
@@ -4496,7 +4512,7 @@
                 statusIcons.appendChild(censorBtn);
                 
                 row1.appendChild(wormLabel);
-                row1.appendChild(healthBadge);
+                row1.appendChild(healthDropdown);
                 row1.appendChild(statusIcons);
                 infoBar.appendChild(row1);
                 
