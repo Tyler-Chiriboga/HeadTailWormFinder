@@ -140,6 +140,18 @@ class CreateUserRequest(BaseModel):
     password: str
     role: str = "annotator"
 
+
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+    confirm_password: str
+
+
+# Registration settings (can be changed by admin)
+REGISTRATION_ENABLED = True  # Set to False to disable public registration
+DEFAULT_ROLE = "annotator"   # Role assigned to new signups
+
+
 class ChangePasswordRequest(BaseModel):
     username: str
     new_password: str
@@ -1072,6 +1084,17 @@ async def login_page():
     return HTMLResponse(content="<h1>Login page not found</h1>")
 
 
+@app.get("/signup")
+async def signup_page():
+    """Serve the signup page."""
+    if not REGISTRATION_ENABLED:
+        return RedirectResponse(url="/login")
+    html_path = Path(__file__).parent / "static" / "signup.html"
+    if html_path.exists():
+        return HTMLResponse(content=html_path.read_text())
+    return HTMLResponse(content="<h1>Signup page not found</h1>")
+
+
 @app.get("/app")
 async def app_page(request: Request, token: Optional[str] = None):
     """Serve the main app (requires auth)."""
@@ -1132,6 +1155,67 @@ async def logout(response: Response, user: Optional[dict] = Depends(get_current_
         pass
     
     return {"success": True}
+
+
+@app.post("/api/auth/signup")
+async def signup(request: SignupRequest, response: Response):
+    """
+    Public signup endpoint for new users.
+    Creates an account and logs them in automatically.
+    """
+    if not REGISTRATION_ENABLED:
+        raise HTTPException(status_code=403, detail="Registration is disabled")
+    
+    # Validate passwords match
+    if request.password != request.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+    
+    # Validate password strength
+    if len(request.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    # Validate username
+    if len(request.username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+    
+    if not request.username.isalnum():
+        raise HTTPException(status_code=400, detail="Username must contain only letters and numbers")
+    
+    # Create user
+    if not auth_manager.create_user(request.username, request.password, DEFAULT_ROLE):
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Auto-login the new user
+    token = auth_manager.login(request.username, request.password)
+    
+    if token:
+        response.set_cookie(
+            key="auth_token",
+            value=token,
+            max_age=86400 * 7,  # 7 days
+            httponly=True,
+            samesite="lax"
+        )
+        
+        return {
+            "success": True,
+            "token": token,
+            "username": request.username,
+            "role": DEFAULT_ROLE,
+            "message": "Account created successfully"
+        }
+    
+    return {
+        "success": True,
+        "username": request.username,
+        "message": "Account created. Please log in."
+    }
+
+
+@app.get("/api/auth/registration-status")
+async def get_registration_status():
+    """Check if registration is enabled."""
+    return {"enabled": REGISTRATION_ENABLED}
 
 
 @app.get("/api/auth/me")

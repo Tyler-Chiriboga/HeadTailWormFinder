@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Worm Annotation Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .signup-container {
+            background: rgba(22, 33, 62, 0.95);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            font-size: 64px;
+            margin-bottom: 10px;
+        }
+        
+        .logo h1 {
+            color: #e94560;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .logo p {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #aaa;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0f3460;
+            border: 2px solid #1a4a7a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #e94560;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.2);
+        }
+        
+        .form-group input::placeholder {
+            color: #555;
+        }
+        
+        .form-group input.error {
+            border-color: #ff4444;
+        }
+        
+        .form-group input.success {
+            border-color: #44ff44;
+        }
+        
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+        }
+        
+        .password-requirements.valid {
+            color: #44ff44;
+        }
+        
+        .btn-signup {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+        }
+        
+        .btn-signup:active {
+            transform: translateY(0);
+        }
+        
+        .btn-signup:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff4444;
+            color: #ff6b6b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .success-message {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #44ff44;
+            color: #88ff88;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .footer a {
+            color: #e94560;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+        }
+        
+        .btn-signup.loading .spinner {
+            display: inline-block;
+        }
+        
+        .btn-signup.loading .btn-text {
+            opacity: 0.7;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Animate entrance */
+        .signup-container {
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Password match indicator */
+        .match-indicator {
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+        }
+        
+        .match-indicator.show {
+            display: block;
+        }
+        
+        .match-indicator.match {
+            color: #44ff44;
+        }
+        
+        .match-indicator.no-match {
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="logo">
+            <div class="logo-icon">🪱</div>
+            <h1>Worm Annotation Tool</h1>
+            <p>Create your account</p>
+        </div>
+        
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+        
+        <form id="signup-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" 
+                       placeholder="Choose a username" required autofocus
+                       pattern="[a-zA-Z0-9]+" minlength="3">
+                <div class="password-requirements" id="username-hint">
+                    3+ characters, letters and numbers only
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" 
+                       placeholder="Create a password" required minlength="6">
+                <div class="password-requirements" id="password-hint">
+                    At least 6 characters
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password</label>
+                <input type="password" id="confirm-password" name="confirm_password" 
+                       placeholder="Confirm your password" required>
+                <div class="match-indicator" id="match-indicator">
+                    <span class="match-text"></span>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-signup" id="signup-btn">
+                <span class="spinner"></span>
+                <span class="btn-text">Create Account</span>
+            </button>
+        </form>
+        
+        <div class="footer">
+            <p>Already have an account? <a href="/login">Sign in</a></p>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('signup-form');
+        const errorDiv = document.getElementById('error-message');
+        const successDiv = document.getElementById('success-message');
+        const signupBtn = document.getElementById('signup-btn');
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirm-password');
+        const usernameInput = document.getElementById('username');
+        const matchIndicator = document.getElementById('match-indicator');
+        const passwordHint = document.getElementById('password-hint');
+        const usernameHint = document.getElementById('username-hint');
+        
+        // Check if registration is enabled
+        (async () => {
+            try {
+                const response = await fetch('/api/auth/registration-status');
+                const data = await response.json();
+                if (!data.enabled) {
+                    errorDiv.textContent = 'Registration is currently disabled. Please contact an administrator.';
+                    errorDiv.classList.add('show');
+                    signupBtn.disabled = true;
+                    form.querySelectorAll('input').forEach(i => i.disabled = true);
+                }
+            } catch (e) {
+                console.error('Could not check registration status:', e);
+            }
+            
+            // Check if already logged in
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    window.location.href = '/app';
+                }
+            } catch (e) {
+                // Not logged in, stay on signup page
+            }
+        })();
+        
+        // Validate username as user types
+        usernameInput.oninput = () => {
+            errorDiv.classList.remove('show');
+            const username = usernameInput.value;
+            
+            if (username.length >= 3 && /^[a-zA-Z0-9]+$/.test(username)) {
+                usernameInput.classList.remove('error');
+                usernameInput.classList.add('success');
+                usernameHint.classList.add('valid');
+            } else {
+                usernameInput.classList.remove('success');
+                if (username.length > 0) {
+                    usernameInput.classList.add('error');
+                }
+                usernameHint.classList.remove('valid');
+            }
+        };
+        
+        // Validate password as user types
+        passwordInput.oninput = () => {
+            errorDiv.classList.remove('show');
+            const password = passwordInput.value;
+            
+            if (password.length >= 6) {
+                passwordInput.classList.remove('error');
+                passwordInput.classList.add('success');
+                passwordHint.classList.add('valid');
+            } else {
+                passwordInput.classList.remove('success');
+                if (password.length > 0) {
+                    passwordInput.classList.add('error');
+                }
+                passwordHint.classList.remove('valid');
+            }
+            
+            // Check if passwords match
+            checkPasswordMatch();
+        };
+        
+        // Check password match
+        function checkPasswordMatch() {
+            const password = passwordInput.value;
+            const confirm = confirmInput.value;
+            
+            if (confirm.length === 0) {
+                matchIndicator.classList.remove('show');
+                confirmInput.classList.remove('error', 'success');
+                return;
+            }
+            
+            matchIndicator.classList.add('show');
+            
+            if (password === confirm) {
+                matchIndicator.classList.remove('no-match');
+                matchIndicator.classList.add('match');
+                matchIndicator.querySelector('.match-text').textContent = '✓ Passwords match';
+                confirmInput.classList.remove('error');
+                confirmInput.classList.add('success');
+            } else {
+                matchIndicator.classList.remove('match');
+                matchIndicator.classList.add('no-match');
+                matchIndicator.querySelector('.match-text').textContent = '✗ Passwords do not match';
+                confirmInput.classList.remove('success');
+                confirmInput.classList.add('error');
+            }
+        }
+        
+        confirmInput.oninput = () => {
+            errorDiv.classList.remove('show');
+            checkPasswordMatch();
+        };
+        
+        // Form submission
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmInput.value;
+            
+            // Client-side validation
+            if (username.length < 3) {
+                errorDiv.textContent = 'Username must be at least 3 characters';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9]+$/.test(username)) {
+                errorDiv.textContent = 'Username must contain only letters and numbers';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorDiv.textContent = 'Password must be at least 6 characters';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            // Show loading state
+            signupBtn.classList.add('loading');
+            signupBtn.disabled = true;
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        confirm_password: confirmPassword
+                    }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Store token in localStorage
+                    if (data.token) {
+                        localStorage.setItem('auth_token', data.token);
+                    }
+                    
+                    // Show success and redirect
+                    successDiv.textContent = data.message || 'Account created successfully! Redirecting...';
+                    successDiv.classList.add('show');
+                    
+                    setTimeout(() => {
+                        if (data.token) {
+                            window.location.href = '/app?token=' + encodeURIComponent(data.token);
+                        } else {
+                            window.location.href = '/login';
+                        }
+                    }, 1500);
+                } else {
+                    // Show error
+                    errorDiv.textContent = data.detail || 'Could not create account';
+                    errorDiv.classList.add('show');
+                    signupBtn.classList.remove('loading');
+                    signupBtn.disabled = false;
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Connection error. Please try again.';
+                errorDiv.classList.add('show');
+                signupBtn.classList.remove('loading');
+                signupBtn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
