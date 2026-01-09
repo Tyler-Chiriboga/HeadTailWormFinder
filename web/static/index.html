@@ -136,6 +136,14 @@
             background: #e94560;
         }
         
+        #qc-btn.active {
+            background: #4CAF50;
+        }
+        
+        #qc-btn.active:hover {
+            background: #45a049;
+        }
+        
         button.primary {
             background: #e94560;
         }
@@ -150,14 +158,14 @@
             position: relative;
             overflow: auto;
             background: #0a0a0a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            /* Remove flexbox centering - let padding handle it */
         }
         
         #canvas-wrapper {
             position: relative;
             display: inline-block;
+            /* Add margin to center when smaller than container */
+            margin: 20px;
         }
         
         #frame-canvas {
@@ -288,7 +296,7 @@
             background: #16213e;
             padding: 20px;
             border-radius: 8px;
-            min-width: 400px;
+            min-width: min(400px, 90vw);
         }
         
         .modal-content h3 {
@@ -370,6 +378,307 @@
             line-height: 35px;
             font-size: 13px;
         }
+        
+        /* ============================================
+           RESPONSIVE DESIGN - MEDIA QUERIES
+           ============================================ */
+        
+        /* Medium screens (tablets, small laptops) */
+        @media screen and (max-width: 1200px) {
+            .sidebar {
+                width: 240px;
+                padding: 10px;
+            }
+            
+            .sidebar h2 {
+                font-size: 16px;
+            }
+            
+            .sidebar h3 {
+                font-size: 12px;
+            }
+            
+            .video-list {
+                max-height: 200px;
+            }
+            
+            button {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            
+            .toolbar {
+                padding: 8px 10px;
+                flex-wrap: wrap;
+            }
+            
+            .toolbar-group {
+                padding: 0 5px;
+            }
+        }
+        
+        /* Small screens */
+        @media screen and (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 35vh;
+                border-right: none;
+                border-bottom: 1px solid #0f3460;
+                padding: 8px;
+            }
+            
+            .video-list {
+                max-height: 100px;
+            }
+            
+            .annotation-tree {
+                max-height: 120px;
+                overflow-y: auto;
+            }
+            
+            .main {
+                height: 65vh;
+            }
+            
+            .toolbar {
+                padding: 5px 8px;
+                gap: 5px;
+                overflow-x: auto;
+            }
+            
+            .toolbar-group {
+                flex-shrink: 0;
+            }
+            
+            button {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+            
+            .zoom-controls {
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            .zoom-controls button {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+            
+            #zoom-level {
+                font-size: 11px;
+                padding: 0 5px;
+                line-height: 30px;
+            }
+            
+            .modal-content {
+                min-width: 90vw;
+                max-width: 95vw;
+                max-height: 90vh;
+                overflow-y: auto;
+                padding: 15px;
+            }
+            
+            .user-info {
+                padding: 6px;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            
+            .user-info .user-name {
+                font-size: 12px;
+            }
+            
+            .worm-header {
+                padding: 6px;
+                font-size: 12px;
+            }
+            
+            .box-item {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        }
+        
+        /* Very small screens (phones) */
+        @media screen and (max-width: 600px) {
+            .sidebar {
+                max-height: 30vh;
+                padding: 5px;
+            }
+            
+            .sidebar h2 {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+            
+            .sidebar h3 {
+                font-size: 11px;
+                margin: 8px 0 5px;
+            }
+            
+            .video-list {
+                max-height: 80px;
+            }
+            
+            .video-list li {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+            
+            .annotation-tree {
+                max-height: 80px;
+            }
+            
+            .toolbar {
+                padding: 4px;
+                gap: 3px;
+            }
+            
+            .toolbar-group {
+                padding: 0 3px;
+                gap: 3px;
+            }
+            
+            button {
+                padding: 4px 6px;
+                font-size: 10px;
+            }
+            
+            /* Hide button text on very small screens, show only emoji */
+            .toolbar button {
+                font-size: 14px;
+                padding: 6px;
+                min-width: 32px;
+            }
+            
+            .toolbar button::after {
+                content: none;
+            }
+            
+            /* Use data attributes or hide text via font-size trick */
+            .toolbar-group span {
+                display: none;
+            }
+            
+            .toolbar-group label {
+                display: none;
+            }
+            
+            #confidence-slider {
+                width: 50px !important;
+            }
+            
+            #confidence-value {
+                min-width: 28px !important;
+                font-size: 10px !important;
+            }
+            
+            .modal-content {
+                min-width: 95vw;
+                padding: 10px;
+            }
+            
+            .modal-content h3 {
+                font-size: 16px;
+            }
+            
+            .modal-content table {
+                font-size: 11px;
+            }
+            
+            kbd {
+                padding: 2px 4px;
+                font-size: 10px;
+            }
+            
+            .statusbar {
+                padding: 4px 8px;
+                font-size: 10px;
+                flex-wrap: wrap;
+            }
+            
+            .zoom-controls {
+                bottom: 5px;
+                right: 5px;
+                padding: 3px;
+            }
+            
+            .zoom-controls button {
+                width: 25px;
+                height: 25px;
+                font-size: 12px;
+            }
+            
+            #zoom-level {
+                font-size: 10px;
+                line-height: 25px;
+            }
+            
+            #brush-controls {
+                min-width: 150px !important;
+                padding: 8px !important;
+                bottom: 40px !important;
+                right: 10px !important;
+            }
+            
+            .user-info {
+                padding: 5px;
+            }
+            
+            .user-info .logout-btn {
+                padding: 3px 6px;
+                font-size: 10px;
+            }
+        }
+        
+        /* Handle very wide screens - constrain sidebar */
+        @media screen and (min-width: 1600px) {
+            .sidebar {
+                width: 320px;
+            }
+            
+            .video-list {
+                max-height: 400px;
+            }
+        }
+        
+        /* Ensure modals don't overflow on any screen */
+        .modal-content {
+            max-width: min(95vw, 800px);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        /* Better touch targets for mobile */
+        @media (hover: none) and (pointer: coarse) {
+            button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            .video-list li {
+                min-height: 40px;
+                display: flex;
+                align-items: center;
+            }
+            
+            .worm-header {
+                min-height: 44px;
+            }
+            
+            .box-item {
+                min-height: 36px;
+                display: flex;
+                align-items: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -391,13 +700,18 @@
                 📁 Open Folder
             </button>
             
-            <!-- Current Folder Display -->
-            <div id="current-folder" style="background: #0f3460; border-radius: 5px; padding: 8px; margin-bottom: 15px; font-size: 11px; word-break: break-all; display: none;">
-                <span style="color: #888;">📂 Folder:</span><br>
-                <span id="current-folder-path" style="color: #4ecca3;">-</span>
+            <!-- Current Folder Display with Navigation -->
+            <div id="current-folder" style="background: #0f3460; border-radius: 5px; padding: 8px; margin-bottom: 10px; font-size: 11px; display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <button id="prev-folder-btn" style="padding: 2px 8px; font-size: 11px;" title="Previous Folder">◀◀</button>
+                    <span id="folder-position" style="color: #4ecca3; font-weight: bold;">Folder 1/1</span>
+                    <button id="next-folder-btn" style="padding: 2px 8px; font-size: 11px;" title="Next Folder">▶▶</button>
+                </div>
+                <div style="color: #888; font-size: 10px;">📂 ChipID:</div>
+                <div id="current-folder-name" style="color: #fff; font-size: 12px; font-weight: bold; word-break: break-all;">-</div>
             </div>
             
-            <h3>Videos</h3>
+            <h3>Videos <span id="video-position" style="color: #888; font-size: 11px; font-weight: normal;">(0/0)</span></h3>
             <ul class="video-list" id="video-list">
                 <li style="color: #666;">No folder loaded</li>
             </ul>
@@ -436,9 +750,43 @@
                     <span id="stats-masks" style="color: #ffff00;">0</span>
                 </div>
                 
+                <!-- Health class summary for all worms -->
+                <div id="all-worms-health" style="border-top: 1px solid #1a1a2e; padding-top: 8px; margin-top: 5px;">
+                    <div style="color: #4ecca3; font-weight: bold; margin-bottom: 5px;">🧬 Health Classes</div>
+                    <div id="health-summary-table" style="font-size: 11px; max-height: 150px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="color: #aaa; font-size: 10px;">
+                                    <th style="text-align: left; padding: 2px;">ID</th>
+                                    <th style="text-align: center; padding: 2px;">Class</th>
+                                    <th style="text-align: right; padding: 2px;">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="health-summary-body">
+                                <!-- Will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
                 <!-- Selected worm stats -->
                 <div id="selected-worm-stats" style="border-top: 1px solid #1a1a2e; padding-top: 8px; margin-top: 5px; display: none;">
                     <div style="color: #4ecca3; font-weight: bold; margin-bottom: 5px;">📊 Selected Worm</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                        <span>Health Class:</span>
+                        <select id="health-class-select" style="background: #1a1a2e; color: white; border: 1px solid #4ecca3; border-radius: 3px; padding: 2px 5px; font-size: 11px; cursor: pointer;">
+                            <option value="">-</option>
+                            <option value="A">A (Healthy)</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E (Leaky)</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span>Health Score:</span>
+                        <span id="stats-health">-</span>
+                    </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
                         <span>Worm Area:</span>
                         <span id="stats-worm-area">-</span>
@@ -477,36 +825,40 @@
             <!-- Toolbar -->
             <div class="toolbar">
                 <div class="toolbar-group">
-                    <button id="prev-btn" title="Previous Video">◀ Prev</button>
-                    <button id="next-btn" title="Next Video">Next ▶</button>
+                    <button id="prev-btn" title="Previous Video [←]">◀ Prev</button>
+                    <button id="next-btn" title="Next Video [→]">Next ▶</button>
                 </div>
                 
                 <div class="toolbar-group">
-                    <button id="detect-btn" class="primary" title="Run YOLO Detection">🔍 Detect</button>
+                    <button id="detect-btn" class="primary" title="Run YOLO Detection [D]">🔍 Detect</button>
                     <button id="detect-all-btn" title="Run Detection on All Videos">🔍 Detect All</button>
+                    <button id="detect-segment-folder-btn" title="Detect & Segment All Videos in Folder">🔍✂️ Folder</button>
                     <button id="segment-btn" title="Segment Selected">✂️ Segment</button>
                     <button id="segment-all-btn" title="Segment All Worms">✂️ Segment All</button>
                 </div>
                 
                 <div class="toolbar-group">
-                    <button id="select-mode" class="active" title="Select Mode">↖️ Select</button>
-                    <button id="worm-mode" title="Add Manual Worm Detection">🪱 Add Worm</button>
-                    <button id="head-mode" title="Draw Head Box/Line">🟢 Head</button>
-                    <button id="tail-mode" title="Draw Tail Box/Line">🔴 Tail</button>
-                    <button id="brush-add-mode" title="Brush Add to Mask">🖌️+ Add</button>
-                    <button id="brush-remove-mode" title="Brush Remove from Mask">🖌️- Remove</button>
+                    <button id="select-mode" class="active" title="Select Mode [S]">↖️ Select</button>
+                    <button id="pan-mode" title="Pan Mode [P] (also: Middle-click drag or Space+drag)">✋ Pan</button>
+                    <button id="worm-mode" title="Add Manual Worm Detection [W]">🪱 Add Worm</button>
+                    <button id="head-mode" title="Draw Head Box/Line [H]">🟢 Head</button>
+                    <button id="tail-mode" title="Draw Tail Box/Line [T]">🔴 Tail</button>
+                    <button id="brush-add-mode" title="Brush Add to Mask [B]">🖌️+ Add</button>
+                    <button id="brush-remove-mode" title="Brush Remove from Mask [Shift+B]">🖌️- Remove</button>
                 </div>
                 
                 <div class="toolbar-group" style="display: flex; align-items: center; gap: 5px;">
                     <span style="font-size: 11px; color: #aaa;">Draw:</span>
-                    <button id="draw-box-mode" class="active" style="font-size: 11px; padding: 4px 8px;" title="Draw boxes for head/tail">📦 Box</button>
-                    <button id="draw-line-mode" style="font-size: 11px; padding: 4px 8px;" title="Draw lines for head/tail">📏 Line</button>
+                    <button id="draw-box-mode" class="active" style="font-size: 11px; padding: 4px 8px;" title="Draw boxes for head/tail [L to toggle]">📦 Box</button>
+                    <button id="draw-line-mode" style="font-size: 11px; padding: 4px 8px;" title="Draw lines for head/tail [L to toggle]">📏 Line</button>
                 </div>
                 
                 <div class="toolbar-group">
-                    <button id="save-btn" title="Save Annotations">💾 Save</button>
+                    <button id="qc-btn" title="Mark Video as QC Complete">☐ QC</button>
+                    <button id="tile-qc-btn" title="Tile View - Grid overview of all worms [G]">🔲 Tile</button>
+                    <button id="save-btn" title="Save Annotations [Ctrl+S]">💾 Save</button>
                     <button id="export-btn" title="Export to Excel">📊 Export</button>
-                    <button id="help-btn" title="Show Help">❓ Help</button>
+                    <button id="help-btn" title="Show Help [?]">❓ Help</button>
                 </div>
                 
                 <div class="toolbar-group" style="display: flex; align-items: center; gap: 8px;">
@@ -525,18 +877,18 @@
                 </div>
                 
                 <div class="zoom-controls">
-                    <button id="zoom-out">−</button>
+                    <button id="zoom-out" title="Zoom Out [-]">−</button>
                     <span id="zoom-level">100%</span>
-                    <button id="zoom-in">+</button>
-                    <button id="zoom-fit">Fit</button>
+                    <button id="zoom-in" title="Zoom In [+]">+</button>
+                    <button id="zoom-fit" title="Fit to Window">Fit</button>
                 </div>
                 
                 <!-- Brush controls (shown when in brush mode) -->
                 <div id="brush-controls" style="display:none; position:absolute; bottom:60px; right:20px; background:rgba(0,0,0,0.85); padding:10px; border-radius:8px; min-width:200px;">
                     <div style="color:#fff; font-size:12px; margin-bottom:8px; font-weight:bold;">🖌️ Brush Refinement</div>
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                        <label style="color:#aaa; font-size:11px; min-width:50px;">Size:</label>
-                        <input type="range" id="brush-size" min="3" max="50" value="15" style="flex:1;">
+                        <label style="color:#aaa; font-size:11px; min-width:50px;" title="Use [ and ] keys to adjust">Size:</label>
+                        <input type="range" id="brush-size" min="3" max="50" value="15" style="flex:1;" title="Brush size - use [ and ] keys to adjust">
                         <span id="brush-size-value" style="color:#fff; font-size:11px; min-width:25px;">15</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -549,7 +901,7 @@
                     </div>
                     <div style="display:flex; gap:5px;">
                         <button id="brush-apply" class="primary" style="flex:1; font-size:11px;">✅ Apply</button>
-                        <button id="brush-cancel" style="flex:1; font-size:11px;">❌ Cancel</button>
+                        <button id="brush-cancel" style="flex:1; font-size:11px;" title="Cancel [Esc]">❌ Cancel</button>
                     </div>
                 </div>
             </div>
@@ -564,7 +916,7 @@
     
     <!-- Folder selection modal -->
     <div class="modal" id="folder-modal">
-        <div class="modal-content" style="max-width: 600px; max-height: 80vh;">
+        <div class="modal-content" style="max-width: min(600px, 95vw); max-height: 80vh;">
             <h3>📁 Open Folder</h3>
             
             <!-- Current path display -->
@@ -599,13 +951,15 @@
     
     <!-- Help Modal -->
     <div class="modal" id="help-modal">
-        <div class="modal-content" style="max-width:700px; max-height:80vh; overflow-y:auto;">
+        <div class="modal-content" style="max-width: min(750px, 95vw); max-height:85vh; overflow-y:auto;">
             <h3 style="color:#4ecca3;">🪱 Worm Annotator Help</h3>
             
             <h4 style="color:#e94560; margin-top:15px;">⌨️ Keyboard Shortcuts</h4>
             <table style="width:100%; border-collapse:collapse; font-size:13px;">
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>D</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Run YOLO detection</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>S</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Select mode</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>P</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Pan mode</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>G</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Grid/Tile QC view</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>W</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Add worm mode</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>H</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Draw head (box or line)</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>T</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Draw tail (box or line)</td></tr>
@@ -615,10 +969,22 @@
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Ctrl+S</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Save annotations</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>← / →</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Navigate videos</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>+ / -</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Zoom in/out</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Space + Drag</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Pan canvas (temporary)</td></tr>
+                <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Middle-click Drag</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Pan canvas (anytime)</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>Delete</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Delete selected worm</td></tr>
                 <tr><td style="padding:5px; border-bottom:1px solid #0f3460;"><kbd>[ / ]</kbd></td><td style="padding:5px; border-bottom:1px solid #0f3460;">Decrease/increase brush size</td></tr>
                 <tr><td style="padding:5px;"><kbd>?</kbd></td><td style="padding:5px;">Toggle this help</td></tr>
             </table>
+            
+            <h4 style="color:#e94560; margin-top:20px;">🔲 Tile QC View</h4>
+            <p style="font-size:13px; line-height:1.6;">Quick visual review of all worms:</p>
+            <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li>Press <kbd>G</kbd> or click <strong>🔲 Tile</strong> to open grid view</li>
+                <li>Choose grid size (2x2 to 6x6) for overview</li>
+                <li>View options: Cropped, Masked, or Straightened worms</li>
+                <li>Click any tile to select that worm and return to main view</li>
+                <li>Use <kbd>←</kbd>/<kbd>→</kbd> to navigate pages</li>
+            </ul>
             
             <h4 style="color:#e94560; margin-top:20px;">🛠️ Workflow Guide</h4>
             <ol style="font-size:13px; line-height:1.8; padding-left:20px;">
@@ -628,8 +994,28 @@
                 <li><strong>Draw head/tail</strong> using H and T modes (toggle Box/Line with L)</li>
                 <li><strong>Run segmentation</strong> with ✂️ Segment for pixel-perfect masks</li>
                 <li><strong>Refine masks</strong> with the brush tool if needed</li>
+                <li><strong>Use Tile View</strong> (<kbd>G</kbd>) for quick QC review of all worms</li>
+                <li><strong>Mark as QC'd</strong> when satisfied with all annotations</li>
                 <li><strong>Save</strong> your work with Ctrl+S</li>
             </ol>
+            
+            <h4 style="color:#e94560; margin-top:20px;">🔍 Batch Detection</h4>
+            <p style="font-size:13px; line-height:1.6;">Process multiple videos at once:</p>
+            <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li><strong>🔍 Detect & Segment Folder</strong> - Process all videos in current folder</li>
+                <li><strong>🚀 Batch Detect</strong> - Opens modal with options for folder or entire project</li>
+                <li>Skip already QC'd videos or those with existing detections</li>
+                <li>Auto-runs SAM segmentation on each detected worm</li>
+            </ul>
+            
+            <h4 style="color:#e94560; margin-top:20px;">✅ Quality Control (QC)</h4>
+            <p style="font-size:13px; line-height:1.6;">Track which videos have been reviewed:</p>
+            <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li>Click <strong>✅ Mark as QC'd</strong> when you've verified all annotations</li>
+                <li>QC'd videos show a green checkmark in the sidebar</li>
+                <li>QC status is saved with annotations and tracked in exports</li>
+                <li>Batch detection can skip QC'd videos automatically</li>
+            </ul>
             
             <h4 style="color:#e94560; margin-top:20px;">🖌️ Brush Refinement</h4>
             <p style="font-size:13px; line-height:1.6;">Use the brush tool to refine segmentation masks:</p>
@@ -641,19 +1027,137 @@
                 <li>Click <strong>Apply</strong> to save changes or <strong>Cancel</strong> to discard</li>
             </ul>
             
+            <h4 style="color:#e94560; margin-top:20px;">📊 Export Options</h4>
+            <p style="font-size:13px; line-height:1.6;">Export your data in multiple formats:</p>
+            <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li><strong>📊 Excel/CSV Export</strong> - Spreadsheet with annotations and statistics
+                    <ul style="padding-left:15px; margin-top:5px;">
+                        <li>Project Export - Single file with all data</li>
+                        <li>Per-Chip Export - Separate file for each chip/folder</li>
+                        <li>Includes project and chip summaries with health statistics</li>
+                    </ul>
+                </li>
+                <li><strong>🤖 Training Dataset Export</strong> - YOLO format for AI model training
+                    <ul style="padding-left:15px; margin-top:5px;">
+                        <li>YOLO Detection format (bounding boxes)</li>
+                        <li>YOLO Segmentation format (polygon masks)</li>
+                        <li>Configurable train/val split (splits by video)</li>
+                        <li>Filter by QC status, censored worms, and mask availability</li>
+                        <li>Generates ready-to-use dataset with data.yaml</li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <h4 style="color:#e94560; margin-top:20px;">🩺 Health Classification</h4>
+            <p style="font-size:13px; line-height:1.6;">Worms are automatically classified based on health score:</p>
+            <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
+                <li><strong style="color:#4ecca3;">Healthy</strong> - Score &lt; 0.5 (shown in green)</li>
+                <li><strong style="color:#e94560;">Leaky</strong> - Score ≥ 0.5 (shown in red)</li>
+                <li>Health scores are computed by a CNN classifier</li>
+                <li>Mark worms as <strong>Censored</strong> if they should be excluded from analysis</li>
+            </ul>
+            
             <h4 style="color:#e94560; margin-top:20px;">👁️ Right-Click Menu</h4>
-            <p style="font-size:13px; line-height:1.6;">Right-click on any box to access quick actions: segment, re-segment, delete mask, redraw box, or delete worm.</p>
+            <p style="font-size:13px; line-height:1.6;">Right-click on any box to access quick actions: segment, re-segment, delete mask, redraw box, censor/uncensor, or delete worm.</p>
             
             <h4 style="color:#e94560; margin-top:20px;">📝 Tips</h4>
             <ul style="font-size:13px; line-height:1.8; padding-left:20px;">
-                <li>Use "Detect All" to batch process all videos at once</li>
+                <li>Use <strong>Batch Detect</strong> to process entire folders or projects</li>
+                <li>Mark videos as <strong>QC'd</strong> to track your progress</li>
                 <li>Each worm can only have one head and one tail</li>
                 <li>Zoom in for precise annotations</li>
                 <li>Use "Selected Only" view to focus on one worm</li>
+                <li>Auto-detection runs when navigating to a new folder</li>
+                <li>Export training datasets to train your own YOLO models</li>
             </ul>
             
             <div class="modal-buttons" style="margin-top:20px;">
                 <button id="help-close" class="primary">Got it!</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tile QC Modal - Grid view of all worms -->
+    <div class="modal" id="tile-qc-modal">
+        <div class="modal-content" style="max-width: min(95vw, 1400px); max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="color:#4ecca3; margin: 0;">🔲 Tile QC View</h3>
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 12px; color: #aaa;">Mode:</label>
+                        <select id="tile-mode" style="padding: 5px 10px; background: #1a1a2e; color: #fff; border: 1px solid #0f3460; border-radius: 4px; cursor: pointer;">
+                            <option value="worms">Worms</option>
+                            <option value="frames">Full Frames</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 12px; color: #aaa;">Source:</label>
+                        <select id="tile-source" style="padding: 5px 10px; background: #1a1a2e; color: #fff; border: 1px solid #0f3460; border-radius: 4px; cursor: pointer;">
+                            <option value="current_video">Current Video</option>
+                            <option value="current_folder">Current Folder</option>
+                            <option value="all_folders">All Folders</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 12px; color: #aaa;">Grid:</label>
+                        <select id="tile-grid-size" style="padding: 5px 10px; background: #1a1a2e; color: #fff; border: 1px solid #0f3460; border-radius: 4px; cursor: pointer;">
+                            <option value="2">2x2</option>
+                            <option value="3" selected>3x3</option>
+                            <option value="4">4x4</option>
+                            <option value="5">5x5</option>
+                            <option value="6">6x6</option>
+                        </select>
+                    </div>
+                    <div id="tile-worm-options" style="display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 12px; color: #aaa;">Show:</label>
+                        <select id="tile-show-type" style="padding: 5px 10px; background: #1a1a2e; color: #fff; border: 1px solid #0f3460; border-radius: 4px; cursor: pointer;">
+                            <option value="crop">Cropped</option>
+                            <option value="annotated">Annotated</option>
+                            <option value="mask">Masked</option>
+                            <option value="straightened">Straightened</option>
+                        </select>
+                    </div>
+                    <label id="tile-mask-option" style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #aaa; cursor: pointer;">
+                        <input type="checkbox" id="tile-show-mask" checked style="cursor: pointer;">
+                        Mask
+                    </label>
+                    <label id="tile-annotations-option" style="display: none; align-items: center; gap: 5px; font-size: 12px; color: #aaa; cursor: pointer;">
+                        <input type="checkbox" id="tile-show-annotations" checked style="cursor: pointer;">
+                        Annotations
+                    </label>
+                    <label id="tile-frame-mask-option" style="display: none; align-items: center; gap: 5px; font-size: 12px; color: #aaa; cursor: pointer;">
+                        <input type="checkbox" id="tile-frame-show-mask" checked style="cursor: pointer;">
+                        Masks
+                    </label>
+                    <label id="tile-hide-censored-option" style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #aaa; cursor: pointer;">
+                        <input type="checkbox" id="tile-hide-censored" style="cursor: pointer;">
+                        Hide Censored
+                    </label>
+                    <label id="tile-only-censored-option" style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #e94560; cursor: pointer;">
+                        <input type="checkbox" id="tile-only-censored" style="cursor: pointer;">
+                        Only Censored
+                    </label>
+                    <span id="tile-page-info" style="font-size: 12px; color: #aaa;">Page 1/1</span>
+                </div>
+            </div>
+            
+            <div id="tile-grid-container" style="flex: 1; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: #0a0a0a; border-radius: 8px;">
+                <!-- Tiles will be generated here -->
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a1a2e;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="tile-prev-page" style="padding: 8px 15px;">◀ Prev</button>
+                    <button id="tile-next-page" style="padding: 8px 15px;">Next ▶</button>
+                </div>
+                <div id="tile-qc-buttons" style="display: none; gap: 10px;">
+                    <button id="tile-qc-page" style="padding: 8px 15px; background: #2a5a4a;">✓ QC This Page</button>
+                    <button id="tile-qc-all" style="padding: 8px 15px; background: #4a2a5a;">✓ QC All Visible</button>
+                </div>
+                <div style="font-size: 12px; color: #888;">
+                    Click frame to navigate • <kbd>←</kbd>/<kbd>→</kbd> pages
+                </div>
+                <button id="tile-qc-close" class="primary" style="padding: 8px 20px;">Close</button>
             </div>
         </div>
     </div>
@@ -663,26 +1167,301 @@
         <div class="modal-content" style="max-width: 95vw; width: auto;">
             <h3>📐 Straightened Worm View</h3>
             <p style="font-size: 13px; color: #888; margin-bottom: 15px;">
-                Click on the image to mark <span style="color: #00ff00;">head</span> and <span style="color: #ff0000;">tail</span> positions.
-                The worm has been straightened along its skeleton for easier annotation.
+                Draw lines across the worm to mark <span style="color: #00ff00;">head</span> and <span style="color: #ff0000;">tail</span> positions.
+                Click a button, then click and drag on the image to draw a line.
             </p>
             <div id="straighten-container" style="position: relative; display: flex; justify-content: center; margin-bottom: 15px; overflow-x: auto; max-height: 70vh;">
                 <canvas id="straighten-canvas" style="border: 1px solid #333; cursor: crosshair; image-rendering: pixelated;"></canvas>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
                 <button id="straighten-mark-head" class="btn" style="background: #00ff0040; border: 1px solid #00ff00;">
-                    🟢 Mark Head
+                    🟢 Draw Head Line
                 </button>
                 <button id="straighten-mark-tail" class="btn" style="background: #ff000040; border: 1px solid #ff0000;">
-                    🔴 Mark Tail
+                    🔴 Draw Tail Line
+                </button>
+                <button id="straighten-download" class="btn" style="background: #4080ff40; border: 1px solid #4080ff;">
+                    💾 Download Image
                 </button>
             </div>
             <div style="font-size: 12px; color: #888; text-align: center; margin-bottom: 15px;">
-                <span id="straighten-status">Click a button then click on the worm image</span>
+                <span id="straighten-status">Click a button then draw a line on the worm</span>
             </div>
             <div class="modal-buttons">
                 <button id="straighten-apply" class="primary" disabled>Apply Marks</button>
                 <button id="straighten-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export modal -->
+    <div class="modal" id="export-modal">
+        <div class="modal-content" style="max-width: min(700px, 95vw); max-height: 85vh; overflow-y: auto;">
+            <h3 style="color:#4ecca3;">📊 Export Data</h3>
+            
+            <!-- Summary section -->
+            <div id="export-summary" style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                <h4 style="color:#e94560; margin-bottom: 10px;">📈 Project Summary</h4>
+                <div id="project-summary-content" style="font-size: 13px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>Loading...</div>
+                </div>
+            </div>
+            
+            <!-- Chip summary table -->
+            <div id="chip-summary-section" style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                <h4 style="color:#e94560; margin-bottom: 10px;">🔬 Chip Summary</h4>
+                <div id="chip-summary-content" style="font-size: 12px; overflow-x: auto;">
+                    <table id="chip-summary-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #1a1a2e;">
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #333;">Chip</th>
+                                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #333;">Total</th>
+                                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #333;">Healthy</th>
+                                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #333;">Leaky</th>
+                                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #333;">Healthy %</th>
+                                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #333;">Avg Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chip-summary-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Export Type Selection -->
+            <div style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                <h4 style="color:#e94560; margin-bottom: 10px;">📦 Export Type</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="export-type" value="excel" checked style="accent-color: #4ecca3;" onchange="toggleExportOptions()">
+                        <span><strong>📊 Excel/CSV</strong> - Data spreadsheet for analysis</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="export-type" value="training" style="accent-color: #4ecca3;" onchange="toggleExportOptions()">
+                        <span><strong>🤖 Training Dataset</strong> - YOLO format for AI training</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Excel Export options -->
+            <div id="excel-export-options" style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                <h4 style="color:#e94560; margin-bottom: 10px;">⚙️ Excel Options</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="export-mode" value="project" checked style="accent-color: #4ecca3;">
+                        <span><strong>Project Export</strong> - Single Excel file with all data</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="export-mode" value="chip" style="accent-color: #4ecca3;">
+                        <span><strong>Per-Chip Export</strong> - Separate file for each chip</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="export-mode" value="both" style="accent-color: #4ecca3;">
+                        <span><strong>Both</strong> - Project file + per-chip files</span>
+                    </label>
+                </div>
+                <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="excel-exclude-censored" checked style="accent-color: #4ecca3;">
+                        <span>Exclude <strong>censored worms</strong> from export</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Export Progress Section (hidden by default) -->
+            <div id="export-progress-section" style="display: none;">
+                <div style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                    <h4 style="color:#4ecca3; margin-bottom: 15px;">⏳ Exporting...</h4>
+                    
+                    <!-- Progress bar -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span id="export-progress-text">0 / 0 worms</span>
+                            <span id="export-progress-percent">0%</span>
+                        </div>
+                        <div style="height: 8px; background: #1a1a2e; border-radius: 4px; overflow: hidden;">
+                            <div id="export-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #4ecca3, #00d9ff); transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Current status -->
+                    <div style="font-size: 12px; color: #888;">
+                        <div id="export-current-video" style="margin-bottom: 10px;">Video: -</div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; background: #1a1a2e; border-radius: 5px;">
+                        <div style="text-align: center;">
+                            <div id="export-stat-processed" style="font-size: 18px; font-weight: bold; color: #4ecca3;">0</div>
+                            <div style="font-size: 11px; color: #888;">Worms</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="export-stat-masks" style="font-size: 18px; font-weight: bold; color: #00d9ff;">0</div>
+                            <div style="font-size: 11px; color: #888;">Masks Processed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Training Dataset options -->
+            <div id="training-export-options" style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e; display: none;">
+                <h4 style="color:#e94560; margin-bottom: 10px;">🤖 Training Dataset Options</h4>
+                
+                <!-- Format selection -->
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 13px; color: #888; margin-bottom: 8px; display: block;">Format:</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="training-format" value="yolo_detect" checked style="accent-color: #4ecca3;">
+                            <span><strong>YOLO Detection</strong> - Bounding boxes only (YOLOv5/v7/v8)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="training-format" value="yolo_segment" style="accent-color: #4ecca3;">
+                            <span><strong>YOLO Segmentation</strong> - Polygon masks (YOLOv8-seg)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="training-format" value="both" style="accent-color: #4ecca3;">
+                            <span><strong>Both</strong> - Detection + Segmentation datasets</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Train/Val Split -->
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 13px; color: #888; margin-bottom: 8px; display: block;">
+                        Train/Val Split: <span id="split-value">80</span>% train / <span id="split-val-value">20</span>% val
+                    </label>
+                    <input type="range" id="train-split" min="50" max="95" value="80" style="width: 100%;" 
+                           oninput="document.getElementById('split-value').textContent=this.value; document.getElementById('split-val-value').textContent=100-this.value;">
+                </div>
+                
+                <!-- Options -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="training-qc-only" checked style="accent-color: #4ecca3;">
+                        <span>Only include <strong>QC'd videos</strong></span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="training-skip-censored" checked style="accent-color: #4ecca3;">
+                        <span>Exclude <strong>censored worms</strong></span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="training-require-mask" checked style="accent-color: #4ecca3;">
+                        <span>Only worms with <strong>segmentation masks</strong></span>
+                    </label>
+                </div>
+                
+                <!-- Info/Preview -->
+                <div id="training-export-info" style="margin-top: 15px; padding: 10px; background: #1a1a2e; border-radius: 5px; font-size: 12px; color: #888;">
+                    <div>Class: <strong style="color: #4ecca3;">worm</strong> (class_id: 0)</div>
+                    <div id="training-preview-stats" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #333;">
+                        <span style="color: #666;">Loading preview...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-buttons" style="margin-top: 20px;">
+                <button id="export-download" class="primary">📥 Download Export</button>
+                <button id="export-cancel" style="display: none; background: #e94560;">⏹️ Cancel</button>
+                <button id="export-close">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Batch Detection Modal -->
+    <div class="modal" id="batch-detect-modal">
+        <div class="modal-content" style="max-width: min(500px, 95vw);">
+            <h3 style="color:#4ecca3;">🔍 Batch Detection & Segmentation</h3>
+            
+            <p style="font-size: 13px; color: #888; margin: 15px 0;">
+                Run YOLO detection and SAM segmentation on multiple videos at once.
+            </p>
+            
+            <!-- Scope options -->
+            <div id="batch-options-section">
+                <div style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                    <h4 style="color:#e94560; margin-bottom: 10px;">📁 Detection Scope</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="batch-scope" value="folder" checked style="accent-color: #4ecca3;">
+                            <span><strong>Current Folder</strong> - Only videos in current folder</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="batch-scope" value="project" style="accent-color: #4ecca3;">
+                            <span><strong>Entire Project</strong> - All videos in all folders</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Skip options -->
+                <div style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                    <h4 style="color:#e94560; margin-bottom: 10px;">⚙️ Skip Options</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="batch-skip-qc" checked style="accent-color: #4ecca3;">
+                            <span>Skip videos marked as <strong>QC Complete</strong></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="batch-skip-detections" checked style="accent-color: #4ecca3;">
+                            <span>Skip videos that <strong>already have detections</strong></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Info -->
+                <div id="batch-detect-info" style="margin: 15px 0; padding: 10px; background: #1a1a2e; border-radius: 5px; font-size: 12px; color: #888;">
+                    <div id="batch-detect-stats">Loading preview...</div>
+                </div>
+            </div>
+            
+            <!-- Progress section (hidden by default) -->
+            <div id="batch-progress-section" style="display: none;">
+                <div style="margin: 15px 0; padding: 15px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a2e;">
+                    <h4 style="color:#4ecca3; margin-bottom: 15px;">⏳ Processing...</h4>
+                    
+                    <!-- Progress bar -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span id="batch-progress-text">0 / 0 videos</span>
+                            <span id="batch-progress-percent">0%</span>
+                        </div>
+                        <div style="height: 8px; background: #1a1a2e; border-radius: 4px; overflow: hidden;">
+                            <div id="batch-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #4ecca3, #00d9ff); transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Current status -->
+                    <div style="font-size: 12px; color: #888;">
+                        <div id="batch-current-folder" style="margin-bottom: 5px;">Folder: -</div>
+                        <div id="batch-current-video" style="margin-bottom: 10px;">Video: -</div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; background: #1a1a2e; border-radius: 5px;">
+                        <div style="text-align: center;">
+                            <div id="batch-stat-processed" style="font-size: 18px; font-weight: bold; color: #4ecca3;">0</div>
+                            <div style="font-size: 11px; color: #888;">Processed</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="batch-stat-detections" style="font-size: 18px; font-weight: bold; color: #00d9ff;">0</div>
+                            <div style="font-size: 11px; color: #888;">Detections</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="batch-stat-segmentations" style="font-size: 18px; font-weight: bold; color: #e94560;">0</div>
+                            <div style="font-size: 11px; color: #888;">Segmentations</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="batch-stat-skipped" style="font-size: 18px; font-weight: bold; color: #888;">0</div>
+                            <div style="font-size: 11px; color: #888;">Skipped</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-buttons" style="margin-top: 20px;">
+                <button id="batch-detect-run" class="primary">🚀 Run Detection</button>
+                <button id="batch-detect-cancel" style="display: none; background: #e94560;">⏹️ Cancel</button>
+                <button id="batch-detect-close">Close</button>
             </div>
         </div>
     </div>
@@ -696,7 +1475,7 @@
     <script>
         // State
         const state = {
-            mode: 'select', // select, worm, head, tail, brush-add, brush-remove
+            mode: 'select', // select, pan, worm, head, tail, brush-add, brush-remove
             drawMode: 'box', // box or line (for head/tail annotations)
             zoom: 1,
             currentWormId: null,
@@ -723,7 +1502,12 @@
             brushStrokes: [],      // Array of {x, y, add} points
             isBrushing: false,
             // Cached skeleton images
-            skeletonImages: {}
+            skeletonImages: {},
+            // Pan state
+            isPanning: false,
+            panStart: null,
+            scrollStart: null,
+            spacePressed: false
         };
         
         // Helper to display worm IDs
@@ -841,6 +1625,21 @@
                 
                 frameCtx.drawImage(img, 0, 0);
                 drawAnnotations();
+                
+                // Auto-fit on small screens or if image is larger than container
+                const container = document.querySelector('.canvas-container');
+                if (container) {
+                    const containerWidth = container.clientWidth - 40;
+                    const containerHeight = container.clientHeight - 40;
+                    
+                    // Auto-fit if image doesn't fit or on small screens (< 900px)
+                    if (window.innerWidth < 900 || img.width > containerWidth || img.height > containerHeight) {
+                        const scaleX = containerWidth / img.width;
+                        const scaleY = containerHeight / img.height;
+                        state.zoom = Math.min(scaleX, scaleY, 1);
+                        state.zoom = Math.max(0.1, Math.round(state.zoom * 100) / 100);
+                    }
+                }
                 
                 updateZoom();
             };
@@ -1429,14 +2228,54 @@
             document.getElementById('stats-complete').textContent = complete;
             document.getElementById('stats-masks').textContent = withMasks;
             
+            // Update health summary table for all worms
+            updateHealthSummaryTable();
+            
             // Update selected worm stats
             updateSelectedWormStats();
         }
         
+        function getHealthClassColor(healthClass) {
+            const colors = {
+                'A': '#4ecca3',  // Bright green (healthy)
+                'B': '#7dd87d',  // Light green
+                'C': '#ffcc00',  // Yellow
+                'D': '#ff9933',  // Orange
+                'E': '#ff6b6b'   // Red (leaky)
+            };
+            return colors[healthClass] || '#888';
+        }
+        
+        function updateHealthSummaryTable() {
+            const tbody = document.getElementById('health-summary-body');
+            if (!tbody) return;
+            
+            if (state.annotations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="color: #666; text-align: center; padding: 5px;">No worms</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = state.annotations.map(a => {
+                const hClass = a.health_class || (a.worm_mask_stats?.health_class) || '-';
+                const score = a.health_score ?? (a.worm_mask_stats?.health_score);
+                const scoreDisplay = score !== null && score !== undefined ? (score * 100).toFixed(0) + '%' : '-';
+                const color = getHealthClassColor(hClass);
+                const isSelected = state.currentWormId === a.worm_id;
+                const bgColor = isSelected ? '#1a1a2e' : 'transparent';
+                
+                return `<tr style="cursor: pointer; background: ${bgColor};" onclick="selectWorm(${a.worm_id})">
+                    <td style="padding: 2px; color: ${isSelected ? '#4ecca3' : '#fff'};">${displayWormId(a.worm_id)}</td>
+                    <td style="padding: 2px; text-align: center;"><span style="color: ${color}; font-weight: bold;">${hClass}</span></td>
+                    <td style="padding: 2px; text-align: right; color: #aaa; font-size: 10px;">${scoreDisplay}</td>
+                </tr>`;
+            }).join('');
+        }
+        
         function updateSelectedWormStats() {
             const statsPanel = document.getElementById('selected-worm-stats');
+            const healthSelect = document.getElementById('health-class-select');
             
-            if (!state.currentWormId) {
+            if (state.currentWormId === null || state.currentWormId === undefined) {
                 statsPanel.style.display = 'none';
                 return;
             }
@@ -1448,6 +2287,21 @@
             }
             
             statsPanel.style.display = 'block';
+            
+            // Set health class dropdown
+            const healthClass = annot.health_class || (annot.worm_mask_stats?.health_class) || '';
+            healthSelect.value = healthClass;
+            
+            // Health score display
+            const healthScore = annot.health_score ?? (annot.worm_mask_stats?.health_score);
+            const healthClassification = annot.health_classification ?? (annot.worm_mask_stats?.health_classification);
+            if (healthScore !== null && healthScore !== undefined) {
+                const healthColor = healthClassification === 'Healthy' ? '#4ecca3' : '#ff6b6b';
+                document.getElementById('stats-health').innerHTML = 
+                    `<span style="color: ${healthColor};">${healthClassification}</span> (${(healthScore * 100).toFixed(1)}%)`;
+            } else {
+                document.getElementById('stats-health').textContent = '-';
+            }
             
             // Worm mask stats
             if (annot.worm_mask_stats) {
@@ -1549,9 +2403,14 @@
             imageData: null,
             width: 0,
             height: 0,
+            scale: 1,
             mode: null,  // 'head' or 'tail'
-            headY: null,
-            tailY: null
+            drawing: false,
+            startPoint: null,
+            // Head line (two points defining the line)
+            headLine: null,  // {x1, y1, x2, y2}
+            // Tail line (two points defining the line)
+            tailLine: null   // {x1, y1, x2, y2}
         };
         
         async function openStraightenModal(wormId) {
@@ -1573,8 +2432,10 @@
                 straightenState.width = result.width;
                 straightenState.height = result.height;
                 straightenState.mode = null;
-                straightenState.headY = null;
-                straightenState.tailY = null;
+                straightenState.drawing = false;
+                straightenState.startPoint = null;
+                straightenState.headLine = null;
+                straightenState.tailLine = null;
                 
                 // Draw the image
                 const canvas = document.getElementById('straighten-canvas');
@@ -1582,22 +2443,83 @@
                 
                 const img = new Image();
                 img.onload = () => {
-                    // Scale up significantly for better visibility
-                    // Target: width fills most of modal, minimum 3x scale
-                    const minScale = 3;
-                    const targetWidth = Math.min(window.innerWidth * 0.85, 1400);
-                    const scaleForTarget = targetWidth / result.width;
-                    const scale = Math.max(minScale, Math.min(8, scaleForTarget));
-                    canvas.width = result.width * scale;
-                    canvas.height = result.height * scale;
+                    // The straightened image is very wide (worm length) and thin (worm width)
+                    // We need to scale appropriately for display
+                    // Natural dimensions: width = path length, height = worm thickness
+                    const naturalWidth = img.naturalWidth;   // ~1672 (worm length)
+                    const naturalHeight = img.naturalHeight; // ~176 (worm thickness)
+                    
+                    console.log(`Straightened image: ${naturalWidth} x ${naturalHeight}`);
+                    
+                    // Calculate scale to fit in viewport while maintaining aspect ratio
+                    // Target: fill modal width (up to 90vw), scale height accordingly
+                    const maxWidth = window.innerWidth * 0.9;
+                    const maxHeight = window.innerHeight * 0.6;
+                    
+                    // Scale to fit width first
+                    let scale = maxWidth / naturalWidth;
+                    
+                    // Ensure minimum height visibility (at least 100px displayed height)
+                    const minDisplayHeight = 100;
+                    if (naturalHeight * scale < minDisplayHeight) {
+                        scale = minDisplayHeight / naturalHeight;
+                    }
+                    
+                    // Cap scale to prevent huge images
+                    scale = Math.min(scale, 8);
+                    scale = Math.max(scale, 1);  // At least 1x
+                    
+                    const displayWidth = Math.round(naturalWidth * scale);
+                    const displayHeight = Math.round(naturalHeight * scale);
+                    
+                    console.log(`Display size: ${displayWidth} x ${displayHeight}, scale: ${scale.toFixed(2)}`);
+                    
+                    canvas.width = displayWidth;
+                    canvas.height = displayHeight;
                     ctx.imageSmoothingEnabled = false;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+                    
                     straightenState.scale = scale;
                     straightenState.imageData = img;
+                    straightenState.width = naturalWidth;
+                    straightenState.height = naturalHeight;
+                    
+                    // Check for existing head/tail from backend
+                    if (result.existing_head_x !== null && result.existing_head_x !== undefined) {
+                        // Create a vertical line at the existing head position
+                        straightenState.headLine = {
+                            x1: result.existing_head_x,
+                            y1: 0,
+                            x2: result.existing_head_x,
+                            y2: naturalHeight
+                        };
+                    }
+                    if (result.existing_tail_x !== null && result.existing_tail_x !== undefined) {
+                        // Create a vertical line at the existing tail position
+                        straightenState.tailLine = {
+                            x1: result.existing_tail_x,
+                            y1: 0,
+                            x2: result.existing_tail_x,
+                            y2: naturalHeight
+                        };
+                    }
+                    
+                    // Redraw with existing annotations if any
+                    redrawStraightenCanvas();
                     
                     document.getElementById('straighten-modal').classList.add('show');
-                    document.getElementById('straighten-status').textContent = 'Click a button then click on the worm image';
-                    document.getElementById('straighten-apply').disabled = true;
+                    
+                    let statusMsg = `Image: ${naturalWidth} x ${naturalHeight} px (scale: ${scale.toFixed(1)}x).`;
+                    if (straightenState.headLine && straightenState.tailLine) {
+                        statusMsg += ' Existing head/tail shown. Redraw to change.';
+                    } else {
+                        statusMsg += ' Draw lines to mark head and tail.';
+                    }
+                    document.getElementById('straighten-status').textContent = statusMsg;
+                };
+                img.onerror = () => {
+                    console.error('Failed to load straightened image');
+                    alert('Failed to load straightened image');
                 };
                 img.src = 'data:image/png;base64,' + result.straightened_image;
                 
@@ -1608,7 +2530,7 @@
             }
         }
         
-        function redrawStraightenCanvas() {
+        function redrawStraightenCanvas(tempLine = null) {
             const canvas = document.getElementById('straighten-canvas');
             const ctx = canvas.getContext('2d');
             
@@ -1619,36 +2541,52 @@
             ctx.drawImage(straightenState.imageData, 0, 0, canvas.width, canvas.height);
             
             // Draw head line if set
-            if (straightenState.headY !== null) {
-                const y = straightenState.headY * straightenState.scale;
+            if (straightenState.headLine) {
+                const line = straightenState.headLine;
                 ctx.strokeStyle = '#00ff00';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
+                ctx.moveTo(line.x1 * straightenState.scale, line.y1 * straightenState.scale);
+                ctx.lineTo(line.x2 * straightenState.scale, line.y2 * straightenState.scale);
                 ctx.stroke();
+                // Draw label
                 ctx.fillStyle = '#00ff00';
-                ctx.font = '12px sans-serif';
-                ctx.fillText('HEAD', 5, y - 5);
+                ctx.font = 'bold 14px sans-serif';
+                const midX = (line.x1 + line.x2) / 2 * straightenState.scale;
+                ctx.fillText('HEAD', midX + 5, 20);
             }
             
             // Draw tail line if set
-            if (straightenState.tailY !== null) {
-                const y = straightenState.tailY * straightenState.scale;
+            if (straightenState.tailLine) {
+                const line = straightenState.tailLine;
                 ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
+                ctx.moveTo(line.x1 * straightenState.scale, line.y1 * straightenState.scale);
+                ctx.lineTo(line.x2 * straightenState.scale, line.y2 * straightenState.scale);
                 ctx.stroke();
+                // Draw label
                 ctx.fillStyle = '#ff0000';
-                ctx.font = '12px sans-serif';
-                ctx.fillText('TAIL', 5, y - 5);
+                ctx.font = 'bold 14px sans-serif';
+                const midX = (line.x1 + line.x2) / 2 * straightenState.scale;
+                ctx.fillText('TAIL', midX + 5, 20);
+            }
+            
+            // Draw temporary line while dragging
+            if (tempLine) {
+                ctx.strokeStyle = straightenState.mode === 'head' ? '#00ff0080' : '#ff000080';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(tempLine.x1 * straightenState.scale, tempLine.y1 * straightenState.scale);
+                ctx.lineTo(tempLine.x2 * straightenState.scale, tempLine.y2 * straightenState.scale);
+                ctx.stroke();
+                ctx.setLineDash([]);
             }
             
             // Enable apply button if both are set
             document.getElementById('straighten-apply').disabled = 
-                straightenState.headY === null || straightenState.tailY === null;
+                !straightenState.headLine || !straightenState.tailLine;
         }
 
         function editHead(wormId) {
@@ -1740,8 +2678,28 @@
         // Zoom
         function updateZoom() {
             const wrapper = document.getElementById('canvas-wrapper');
+            const container = document.querySelector('.canvas-container');
+            
+            // Apply scale transform
             wrapper.style.transform = `scale(${state.zoom})`;
             wrapper.style.transformOrigin = 'top left';
+            
+            // Calculate scaled dimensions
+            const scaledWidth = (state.imageWidth || 0) * state.zoom;
+            const scaledHeight = (state.imageHeight || 0) * state.zoom;
+            
+            // Center the image if it's smaller than container
+            if (container && scaledWidth && scaledHeight) {
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                
+                // Calculate margins to center
+                const marginLeft = Math.max(20, (containerWidth - scaledWidth) / 2);
+                const marginTop = Math.max(20, (containerHeight - scaledHeight) / 2);
+                
+                wrapper.style.margin = `${marginTop}px ${marginLeft}px`;
+            }
+            
             document.getElementById('zoom-level').textContent = Math.round(state.zoom * 100) + '%';
         }
         
@@ -1860,8 +2818,11 @@
                 });
                 
                 // Update folder display
-                document.getElementById('current-folder-path').textContent = path;
+                document.getElementById('current-folder-name').textContent = path.split('/').pop() || path;
                 document.getElementById('current-folder').style.display = 'block';
+                
+                // Update folder navigation info
+                await updateFolderInfo();
                 
                 // Update video list
                 const list = document.getElementById('video-list');
@@ -1884,7 +2845,7 @@
                 clearMaskCache();  // Clear cached masks when switching videos
                 const result = await api(`/video/${index}`);
                 state.annotations = result.annotations;
-                state.currentWormId = state.annotations[0]?.worm_id || null;
+                state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
                 drawFrame(result.image);
                 updateAnnotationTree();
                 
@@ -1892,6 +2853,11 @@
                 document.querySelectorAll('.video-list li').forEach((li, i) => {
                     li.classList.toggle('active', i === index);
                 });
+                
+                // Update folder info if present
+                if (result.folder_info) {
+                    updateFolderInfo(result.folder_info);
+                }
                 
                 setStatus('Ready', result.video_path);
             } catch (e) {
@@ -1904,15 +2870,72 @@
             try {
                 // Clear mask cache when loading new frame
                 clearMaskCache();
+                // Clear straightened cache on video change (will be populated on-demand)
+                state.straightenedCache = {};
                 
                 const result = await api('/frame');
                 state.annotations = result.annotations;
-                state.currentWormId = state.annotations[0]?.worm_id || null;
+                // Handle worm_id=0 correctly (don't use || which treats 0 as falsy)
+                state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
+                console.log('[loadCurrentFrame] Set currentWormId to:', state.currentWormId);
                 drawFrame(result.image);
                 updateAnnotationTree();
                 setStatus('Ready', result.video_path);
+                
+                // Update folder info if present
+                if (result.folder_info) {
+                    updateFolderInfo(result.folder_info);
+                }
+                
+                // Update QC button state
+                updateQCButtonState();
+                
+                // Precompute straightened views in the background
+                precomputeStraightened();
+                
+                // Preload adjacent folders in the background
+                preloadAdjacentFolders();
             } catch (e) {
                 console.error('Error loading frame:', e);
+            }
+        }
+        
+        function updateFolderInfo(info) {
+            const folderDiv = document.getElementById('current-folder');
+            if (info && info.folder_count > 0) {
+                folderDiv.style.display = 'block';
+                document.getElementById('folder-position').textContent = info.position_string || `Folder ${info.current_folder_index + 1}/${info.folder_count}`;
+                document.getElementById('current-folder-name').textContent = info.folder_name || info.folder_path || '-';
+                
+                // Update folder navigation buttons
+                document.getElementById('prev-folder-btn').disabled = !info.has_prev_folder;
+                document.getElementById('next-folder-btn').disabled = !info.has_next_folder;
+                
+                // Update video position
+                const videoCount = info.video_count || 0;
+                document.getElementById('video-position').textContent = `(${videoCount} videos)`;
+            }
+        }
+        
+        // Preload adjacent folders in background (non-blocking)
+        async function preloadAdjacentFolders() {
+            try {
+                await api('/preload_adjacent_folders', { method: 'POST' });
+                console.log('Adjacent folders preloaded');
+            } catch (e) {
+                console.log('Preload adjacent folders failed (non-critical):', e);
+            }
+        }
+        
+        // Precompute straightened views in background (non-blocking)
+        async function precomputeStraightened() {
+            try {
+                const result = await api('/precompute_straightened', { method: 'POST' });
+                if (result.precomputed > 0) {
+                    console.log(`Precomputed ${result.precomputed} straightened views`);
+                }
+            } catch (e) {
+                console.log('Precompute straightened failed (non-critical):', e);
             }
         }
         
@@ -1941,6 +2964,195 @@
                 await loadCurrentFrame();
                 setStatus(`Batch detection complete: ${result.total_detections} worms in ${result.processed} videos`);
                 alert(`Batch Detection Complete!\n\nProcessed: ${result.processed} videos\nTotal Worms Found: ${result.total_detections}`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            hideLoading();
+        };
+        
+        document.getElementById('detect-segment-folder-btn').onclick = async () => {
+            // Show the batch detection modal
+            const modal = document.getElementById('batch-detect-modal');
+            modal.classList.add('show');
+            
+            // Load preview stats
+            try {
+                const result = await api('/detect/preview');
+                const statsDiv = document.getElementById('batch-detect-stats');
+                statsDiv.innerHTML = `
+                    <div style="margin-bottom: 8px;"><strong>Folder:</strong> ${result.current_folder_videos} videos in current folder</div>
+                    <div style="margin-bottom: 8px;"><strong>Project:</strong> ${result.total_videos} videos total across ${result.total_folders} folders</div>
+                    <div style="color: #4ecca3;"><strong>Already processed:</strong> ${result.with_detections} have detections, ${result.qc_complete} are QC complete</div>
+                `;
+            } catch (e) {
+                document.getElementById('batch-detect-stats').innerHTML = `<span style="color: #e94560;">Error loading preview: ${e.message}</span>`;
+            }
+        };
+        
+        // Batch detect modal close
+        document.getElementById('batch-detect-close').onclick = () => {
+            document.getElementById('batch-detect-modal').classList.remove('show');
+            // Reset UI state
+            document.getElementById('batch-options-section').style.display = 'block';
+            document.getElementById('batch-progress-section').style.display = 'none';
+            document.getElementById('batch-detect-run').style.display = 'inline-block';
+            document.getElementById('batch-detect-cancel').style.display = 'none';
+        };
+        
+        // Batch detect cancel
+        let batchEventSource = null;
+        document.getElementById('batch-detect-cancel').onclick = async () => {
+            if (batchEventSource) {
+                batchEventSource.close();
+                batchEventSource = null;
+            }
+            try {
+                await api('/detect/batch/cancel', { method: 'POST' });
+            } catch (e) {
+                console.error('Cancel error:', e);
+            }
+            setStatus('Batch detection cancelled');
+        };
+        
+        // Batch detect run with streaming progress
+        document.getElementById('batch-detect-run').onclick = async () => {
+            const scope = document.querySelector('input[name="batch-scope"]:checked').value;
+            const skipQC = document.getElementById('batch-skip-qc').checked;
+            const skipDetections = document.getElementById('batch-skip-detections').checked;
+            
+            // Show progress UI
+            document.getElementById('batch-options-section').style.display = 'none';
+            document.getElementById('batch-progress-section').style.display = 'block';
+            document.getElementById('batch-detect-run').style.display = 'none';
+            document.getElementById('batch-detect-cancel').style.display = 'inline-block';
+            
+            // Reset progress stats
+            document.getElementById('batch-progress-bar').style.width = '0%';
+            document.getElementById('batch-progress-text').textContent = '0 / 0 videos';
+            document.getElementById('batch-progress-percent').textContent = '0%';
+            document.getElementById('batch-current-folder').textContent = 'Folder: Starting...';
+            document.getElementById('batch-current-video').textContent = 'Video: -';
+            document.getElementById('batch-stat-processed').textContent = '0';
+            document.getElementById('batch-stat-detections').textContent = '0';
+            document.getElementById('batch-stat-segmentations').textContent = '0';
+            document.getElementById('batch-stat-skipped').textContent = '0';
+            
+            const scopeText = scope === 'folder' ? 'current folder' : 'entire project';
+            setStatus(`Running detection on ${scopeText}...`);
+            
+            // Build URL with params
+            const token = getAuthToken();
+            const params = new URLSearchParams({
+                scope: scope,
+                skip_qc: skipQC,
+                skip_with_detections: skipDetections
+            });
+            
+            // Use SSE for streaming progress
+            const url = `/api/detect/batch/stream?${params}`;
+            batchEventSource = new EventSource(url);
+            
+            let totalVideos = 0;
+            
+            batchEventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                switch (data.type) {
+                    case 'start':
+                        totalVideos = data.total_videos;
+                        document.getElementById('batch-progress-text').textContent = `0 / ${totalVideos} videos`;
+                        break;
+                        
+                    case 'folder':
+                        document.getElementById('batch-current-folder').textContent = `Folder: ${data.folder_name} (${data.folder}/${data.total_folders})`;
+                        break;
+                        
+                    case 'processing':
+                        document.getElementById('batch-current-video').textContent = `Video: ${data.name}`;
+                        const pctProcessing = Math.round((data.video / totalVideos) * 100);
+                        document.getElementById('batch-progress-bar').style.width = pctProcessing + '%';
+                        document.getElementById('batch-progress-percent').textContent = pctProcessing + '%';
+                        document.getElementById('batch-progress-text').textContent = `${data.video} / ${totalVideos} videos`;
+                        break;
+                        
+                    case 'skip':
+                        const skipped = parseInt(document.getElementById('batch-stat-skipped').textContent) + 1;
+                        document.getElementById('batch-stat-skipped').textContent = skipped;
+                        const pctSkip = Math.round((data.video / totalVideos) * 100);
+                        document.getElementById('batch-progress-bar').style.width = pctSkip + '%';
+                        document.getElementById('batch-progress-percent').textContent = pctSkip + '%';
+                        document.getElementById('batch-progress-text').textContent = `${data.video} / ${totalVideos} videos`;
+                        break;
+                        
+                    case 'result':
+                        document.getElementById('batch-stat-processed').textContent = data.processed;
+                        document.getElementById('batch-stat-detections').textContent = data.total_detections;
+                        document.getElementById('batch-stat-segmentations').textContent = data.total_segmentations;
+                        const pctResult = Math.round((data.video / totalVideos) * 100);
+                        document.getElementById('batch-progress-bar').style.width = pctResult + '%';
+                        document.getElementById('batch-progress-percent').textContent = pctResult + '%';
+                        break;
+                        
+                    case 'complete':
+                        batchEventSource.close();
+                        batchEventSource = null;
+                        
+                        // Update UI
+                        document.getElementById('batch-progress-bar').style.width = '100%';
+                        document.getElementById('batch-progress-percent').textContent = '100%';
+                        document.getElementById('batch-current-video').textContent = 'Complete!';
+                        document.getElementById('batch-detect-cancel').style.display = 'none';
+                        document.getElementById('batch-detect-close').textContent = 'Done';
+                        
+                        state.hasUnsavedChanges = true;
+                        loadCurrentFrame();
+                        updateVideoList();
+                        
+                        const skippedInfo = [];
+                        if (data.skipped_qc > 0) skippedInfo.push(`${data.skipped_qc} QC'd`);
+                        if (data.skipped_detections > 0) skippedInfo.push(`${data.skipped_detections} with detections`);
+                        const skippedText = skippedInfo.length > 0 ? ` | Skipped: ${skippedInfo.join(', ')}` : '';
+                        
+                        setStatus(`✅ Batch complete: ${data.processed} processed, ${data.total_detections} detections, ${data.total_segmentations} segmentations${skippedText}`);
+                        break;
+                        
+                    case 'cancelled':
+                        batchEventSource.close();
+                        batchEventSource = null;
+                        document.getElementById('batch-current-video').textContent = 'Cancelled';
+                        document.getElementById('batch-detect-cancel').style.display = 'none';
+                        setStatus('Batch detection cancelled');
+                        break;
+                        
+                    case 'error':
+                        batchEventSource.close();
+                        batchEventSource = null;
+                        document.getElementById('batch-current-video').textContent = `Error: ${data.message}`;
+                        document.getElementById('batch-detect-cancel').style.display = 'none';
+                        setStatus(`Batch error: ${data.message}`);
+                        alert(`Batch Error: ${data.message}`);
+                        break;
+                }
+            };
+            
+            batchEventSource.onerror = (error) => {
+                console.error('SSE error:', error);
+                if (batchEventSource) {
+                    batchEventSource.close();
+                    batchEventSource = null;
+                }
+                document.getElementById('batch-current-video').textContent = 'Connection lost';
+                document.getElementById('batch-detect-cancel').style.display = 'none';
+                setStatus('Batch detection connection lost');
+            };
+        };
+        
+        document.getElementById('qc-btn').onclick = async () => {
+            showLoading('Updating QC status...');
+            try {
+                const result = await api('/video/qc', { method: 'POST', body: JSON.stringify({}) });
+                await updateVideoList();
+                setStatus(result.qc_complete ? 'Video marked as QC complete' : 'Video QC status cleared');
             } catch (e) {
                 alert('Error: ' + e.message);
             }
@@ -2013,7 +3225,7 @@
         };
         
         // Mode buttons
-        ['select', 'worm', 'head', 'tail'].forEach(mode => {
+        ['select', 'pan', 'worm', 'head', 'tail'].forEach(mode => {
             document.getElementById(`${mode}-mode`).onclick = () => {
                 state.mode = mode;
                 document.querySelectorAll('.toolbar-group button').forEach(btn => {
@@ -2021,9 +3233,15 @@
                         btn.classList.toggle('active', btn.id === `${mode}-mode`);
                     }
                 });
-                annotCanvas.style.cursor = mode === 'select' ? 'default' : 'crosshair';
-                const modeNames = {select: 'Select', worm: 'Add Worm', head: 'Draw Head', tail: 'Draw Tail'};
-                setStatus(`Mode: ${modeNames[mode]}`);
+                if (mode === 'pan') {
+                    annotCanvas.style.cursor = 'grab';
+                } else if (mode === 'select') {
+                    annotCanvas.style.cursor = 'default';
+                } else {
+                    annotCanvas.style.cursor = 'crosshair';
+                }
+                const modeNames = {select: 'Select', pan: 'Pan', worm: 'Add Worm', head: 'Draw Head', tail: 'Draw Tail'};
+                setStatus(`Mode: ${modeNames[mode]}${mode === 'pan' ? ' (drag to scroll, or middle-click/space+drag anytime)' : ''}`);
                 // Hide brush controls when not in brush mode
                 document.getElementById('brush-controls').style.display = 'none';
                 // Hide masks only when head or tail tools are active (to see image while drawing)
@@ -2077,6 +3295,11 @@
                 return;
             }
             
+            if (state.currentWormId === null) {
+                alert('No worm selected. Please select a worm first.');
+                return;
+            }
+            
             showLoading('Applying brush strokes...');
             try {
                 await api('/brush-mask', {
@@ -2093,7 +3316,8 @@
                 await loadCurrentFrame();
                 setStatus('Brush strokes applied');
             } catch (e) {
-                alert('Error applying brush: ' + e.message);
+                const msg = e.message || (e.detail ? JSON.stringify(e.detail) : JSON.stringify(e));
+                alert('Error applying brush: ' + msg);
             }
             hideLoading();
         };
@@ -2115,6 +3339,860 @@
             document.getElementById('help-modal').classList.remove('show');
         };
         
+        // ============================================
+        // Tile QC Mode - Grid view of all worms
+        // ============================================
+        const tileState = {
+            currentPage: 0,
+            gridSize: 3,
+            showType: 'crop',
+            showMask: true,
+            showAnnotations: true,
+            showFrameMask: true,
+            hideCensored: false,
+            onlyCensored: false,
+            source: 'current_video',
+            mode: 'worms',  // 'worms' or 'frames'
+            wormData: [],    // Array of {videoPath, videoName, wormId, hasHead, hasTail, healthClass, censored, hasMask, folderName}
+            frameData: [],   // Array of {videoPath, videoName, wormCount, folderName}
+            wormImages: [],  // Cache of {wormId, videoPath, imageUrl, wormData}
+            frameImages: [], // Cache of {videoPath, imageUrl, frameData}
+            loadingImages: false
+        };
+        
+        document.getElementById('tile-qc-btn').onclick = () => {
+            openTileQCModal();
+        };
+        
+        document.getElementById('tile-qc-close').onclick = () => {
+            document.getElementById('tile-qc-modal').classList.remove('show');
+        };
+        
+        document.getElementById('tile-mode').onchange = (e) => {
+            tileState.mode = e.target.value;
+            tileState.currentPage = 0;
+            
+            // Show/hide relevant options
+            const wormOptions = document.getElementById('tile-worm-options');
+            const maskOption = document.getElementById('tile-mask-option');
+            const annotationsOption = document.getElementById('tile-annotations-option');
+            const frameMaskOption = document.getElementById('tile-frame-mask-option');
+            const qcButtons = document.getElementById('tile-qc-buttons');
+            const sourceSelect = document.getElementById('tile-source');
+            
+            if (tileState.mode === 'frames') {
+                wormOptions.style.display = 'none';
+                maskOption.style.display = 'none';
+                annotationsOption.style.display = 'flex';
+                frameMaskOption.style.display = 'flex';
+                qcButtons.style.display = 'flex';
+                // Disable 'current_video' for frames mode (doesn't make sense)
+                sourceSelect.querySelector('option[value="current_video"]').disabled = true;
+                if (tileState.source === 'current_video') {
+                    sourceSelect.value = 'current_folder';
+                    tileState.source = 'current_folder';
+                }
+            } else {
+                wormOptions.style.display = 'flex';
+                maskOption.style.display = 'flex';
+                annotationsOption.style.display = 'none';
+                frameMaskOption.style.display = 'none';
+                qcButtons.style.display = 'none';
+                sourceSelect.querySelector('option[value="current_video"]').disabled = false;
+            }
+            
+            loadTileData();
+        };
+        
+        document.getElementById('tile-source').onchange = (e) => {
+            tileState.source = e.target.value;
+            tileState.currentPage = 0;
+            loadTileData();
+        };
+        
+        document.getElementById('tile-grid-size').onchange = (e) => {
+            tileState.gridSize = parseInt(e.target.value);
+            tileState.currentPage = 0;
+            renderTileGrid();
+        };
+        
+        document.getElementById('tile-show-type').onchange = (e) => {
+            tileState.showType = e.target.value;
+            loadTileImages();
+        };
+        
+        document.getElementById('tile-show-mask').onchange = (e) => {
+            tileState.showMask = e.target.checked;
+            // Only reload if on annotated view where mask matters
+            if (tileState.showType === 'annotated') {
+                loadTileImages();
+            }
+        };
+        
+        document.getElementById('tile-show-annotations').onchange = (e) => {
+            tileState.showAnnotations = e.target.checked;
+            loadTileFrameImages();
+        };
+        
+        document.getElementById('tile-frame-show-mask').onchange = (e) => {
+            tileState.showFrameMask = e.target.checked;
+            loadTileFrameImages();
+        };
+        
+        document.getElementById('tile-hide-censored').onchange = (e) => {
+            tileState.hideCensored = e.target.checked;
+            // Uncheck "only censored" if hiding censored
+            if (tileState.hideCensored) {
+                tileState.onlyCensored = false;
+                document.getElementById('tile-only-censored').checked = false;
+            }
+            tileState.currentPage = 0;
+            // Re-filter and reload
+            if (tileState.mode === 'worms') {
+                loadTileWorms();
+            } else {
+                renderTileGrid();  // Frames don't need reload, just re-render
+            }
+        };
+        
+        document.getElementById('tile-only-censored').onchange = (e) => {
+            tileState.onlyCensored = e.target.checked;
+            // Uncheck "hide censored" if showing only censored
+            if (tileState.onlyCensored) {
+                tileState.hideCensored = false;
+                document.getElementById('tile-hide-censored').checked = false;
+            }
+            tileState.currentPage = 0;
+            // Re-filter and reload
+            if (tileState.mode === 'worms') {
+                loadTileWorms();
+            } else {
+                renderTileGrid();  // Frames don't need reload, just re-render
+            }
+        };
+        
+        // QC buttons for frame mode
+        document.getElementById('tile-qc-page').onclick = async () => {
+            const tilesPerPage = tileState.gridSize * tileState.gridSize;
+            const startIdx = tileState.currentPage * tilesPerPage;
+            const pageFrames = tileState.frameImages.slice(startIdx, startIdx + tilesPerPage);
+            
+            const videoPaths = pageFrames.map(f => f.videoPath);
+            if (videoPaths.length === 0) return;
+            
+            try {
+                const result = await api('/tile/qc_all_visible', {
+                    method: 'POST',
+                    body: JSON.stringify({ video_paths: videoPaths, qc_complete: true })
+                });
+                
+                if (result.success) {
+                    setStatus(`Marked ${result.updated_count} videos as QC complete`);
+                    // Update local state
+                    for (const frame of pageFrames) {
+                        frame.qcComplete = true;
+                        if (frame.frameData) frame.frameData.qc_complete = true;
+                    }
+                    renderTileGrid();
+                }
+            } catch (e) {
+                setStatus('Error marking QC: ' + e.message);
+            }
+        };
+        
+        document.getElementById('tile-qc-all').onclick = async () => {
+            const videoPaths = tileState.frameImages.map(f => f.videoPath);
+            if (videoPaths.length === 0) return;
+            
+            if (!confirm(`Mark all ${videoPaths.length} videos as QC complete?`)) return;
+            
+            try {
+                const result = await api('/tile/qc_all_visible', {
+                    method: 'POST',
+                    body: JSON.stringify({ video_paths: videoPaths, qc_complete: true })
+                });
+                
+                if (result.success) {
+                    setStatus(`Marked ${result.updated_count} videos as QC complete`);
+                    // Update local state
+                    for (const frame of tileState.frameImages) {
+                        frame.qcComplete = true;
+                        if (frame.frameData) frame.frameData.qc_complete = true;
+                    }
+                    renderTileGrid();
+                }
+            } catch (e) {
+                setStatus('Error marking QC: ' + e.message);
+            }
+        };
+        
+        document.getElementById('tile-prev-page').onclick = () => {
+            if (tileState.currentPage > 0) {
+                tileState.currentPage--;
+                renderTileGrid();
+            }
+        };
+        
+        document.getElementById('tile-next-page').onclick = () => {
+            const tilesPerPage = tileState.gridSize * tileState.gridSize;
+            const dataLength = tileState.mode === 'frames' ? tileState.frameData.length : tileState.wormData.length;
+            const totalPages = Math.ceil(dataLength / tilesPerPage);
+            if (tileState.currentPage < totalPages - 1) {
+                tileState.currentPage++;
+                renderTileGrid();
+            }
+        };
+        
+        async function openTileQCModal() {
+            document.getElementById('tile-qc-modal').classList.add('show');
+            tileState.currentPage = 0;
+            tileState.source = document.getElementById('tile-source').value;
+            tileState.showMask = document.getElementById('tile-show-mask').checked;
+            tileState.showAnnotations = document.getElementById('tile-show-annotations').checked;
+            tileState.mode = document.getElementById('tile-mode').value;
+            
+            // Trigger mode change to set up UI correctly
+            document.getElementById('tile-mode').dispatchEvent(new Event('change'));
+        }
+        
+        async function loadTileData() {
+            if (tileState.mode === 'frames') {
+                await loadTileFrames();
+            } else {
+                await loadTileWorms();
+            }
+        }
+        
+        async function loadTileWorms() {
+            const container = document.getElementById('tile-grid-container');
+            container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading worm list...</div>';
+            
+            try {
+                const result = await api(`/tile/all_worms?source=${tileState.source}`);
+                let worms = result.worms || [];
+                
+                // Filter censored worms based on options
+                if (tileState.hideCensored) {
+                    worms = worms.filter(w => !w.censored);
+                } else if (tileState.onlyCensored) {
+                    worms = worms.filter(w => w.censored);
+                }
+                
+                tileState.wormData = worms;
+                tileState.wormImages = []; // Clear image cache when worm list changes
+                tileState.currentPage = 0;
+                
+                if (tileState.wormData.length === 0) {
+                    let msg = 'No worms found. Run detection first.';
+                    if (tileState.hideCensored) msg = 'No non-censored worms found.';
+                    else if (tileState.onlyCensored) msg = 'No censored worms found.';
+                    container.innerHTML = `<div style="color: #888; text-align: center; padding: 40px;">${msg}</div>`;
+                    document.getElementById('tile-page-info').textContent = '0 worms';
+                    return;
+                }
+                
+                await loadTileImages();
+            } catch (e) {
+                console.error('Error loading tile worms:', e);
+                container.innerHTML = `<div style="color: #ff4444; text-align: center; padding: 40px;">Error loading worms: ${e.message}</div>`;
+            }
+        }
+        
+        async function loadTileFrames() {
+            const container = document.getElementById('tile-grid-container');
+            container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading frame list...</div>';
+            
+            try {
+                const result = await api(`/tile/all_frames?source=${tileState.source}`);
+                tileState.frameData = result.frames || [];
+                tileState.frameImages = []; // Clear image cache when frame list changes
+                tileState.currentPage = 0;
+                
+                if (tileState.frameData.length === 0) {
+                    container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">No frames found.</div>';
+                    document.getElementById('tile-page-info').textContent = '0 frames';
+                    return;
+                }
+                
+                await loadTileFrameImages();
+            } catch (e) {
+                console.error('Error loading tile frames:', e);
+                container.innerHTML = `<div style="color: #ff4444; text-align: center; padding: 40px;">Error loading frames: ${e.message}</div>`;
+            }
+        }
+        
+        async function loadTileFrameImages() {
+            if (tileState.loadingImages) return;
+            tileState.loadingImages = true;
+            
+            const container = document.getElementById('tile-grid-container');
+            container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading frame images...</div>';
+            
+            tileState.frameImages = [];
+            
+            // Load images in batches
+            const batchSize = 4;  // Smaller batches for larger images
+            const totalFrames = tileState.frameData.length;
+            
+            for (let i = 0; i < totalFrames; i += batchSize) {
+                const batch = tileState.frameData.slice(i, Math.min(i + batchSize, totalFrames));
+                
+                // Update progress
+                container.innerHTML = `<div style="color: #888; text-align: center; padding: 40px;">Loading frames... ${Math.min(i + batchSize, totalFrames)}/${totalFrames}</div>`;
+                
+                // Load batch in parallel
+                const batchPromises = batch.map(async (frameData) => {
+                    let imageUrl = null;
+                    
+                    try {
+                        const showAnnotations = tileState.showAnnotations ? 'true' : 'false';
+                        const showMask = tileState.showFrameMask ? 'true' : 'false';
+                        const result = await api(`/tile/frame_image?video_path=${encodeURIComponent(frameData.video_path)}&show_annotations=${showAnnotations}&show_mask=${showMask}`);
+                        if (result.success && result.image) {
+                            imageUrl = 'data:image/png;base64,' + result.image;
+                        }
+                    } catch (e) {
+                        console.error(`Error loading frame for ${frameData.video_name}:`, e);
+                    }
+                    
+                    return {
+                        videoPath: frameData.video_path,
+                        videoName: frameData.video_name,
+                        folderName: frameData.folder_name,
+                        folderIndex: frameData.folder_index,
+                        wormCount: frameData.worm_count,
+                        qcComplete: frameData.qc_complete,
+                        imageUrl: imageUrl,
+                        frameData: frameData
+                    };
+                });
+                
+                const batchResults = await Promise.all(batchPromises);
+                tileState.frameImages.push(...batchResults);
+            }
+            
+            tileState.loadingImages = false;
+            renderTileGrid();
+        }
+        
+        async function loadTileImages() {
+            if (tileState.loadingImages) return;
+            tileState.loadingImages = true;
+            
+            const container = document.getElementById('tile-grid-container');
+            container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading worm images...</div>';
+            
+            tileState.wormImages = [];
+            
+            // Load images in batches for better UX
+            const batchSize = 9;
+            const totalWorms = tileState.wormData.length;
+            
+            for (let i = 0; i < totalWorms; i += batchSize) {
+                const batch = tileState.wormData.slice(i, Math.min(i + batchSize, totalWorms));
+                
+                // Update progress
+                container.innerHTML = `<div style="color: #888; text-align: center; padding: 40px;">Loading images... ${Math.min(i + batchSize, totalWorms)}/${totalWorms}</div>`;
+                
+                // Load batch in parallel
+                const batchPromises = batch.map(async (wormData) => {
+                    let imageUrl = null;
+                    
+                    try {
+                        // Use the tile-specific endpoint that can load from any video
+                        const showMaskParam = tileState.showMask ? 'true' : 'false';
+                        const result = await api(`/tile/worm_image?video_path=${encodeURIComponent(wormData.video_path)}&worm_id=${wormData.worm_id}&show_type=${tileState.showType}&show_mask=${showMaskParam}`);
+                        if (result.success && result.image) {
+                            imageUrl = 'data:image/png;base64,' + result.image;
+                        }
+                    } catch (e) {
+                        console.error(`Error loading image for worm ${wormData.worm_id}:`, e);
+                    }
+                    
+                    return {
+                        wormId: wormData.worm_id,
+                        videoPath: wormData.video_path,
+                        videoName: wormData.video_name,
+                        folderName: wormData.folder_name,
+                        imageUrl: imageUrl,
+                        wormData: wormData
+                    };
+                });
+                
+                const batchResults = await Promise.all(batchPromises);
+                tileState.wormImages.push(...batchResults);
+            }
+            
+            tileState.loadingImages = false;
+            renderTileGrid();
+        }
+        
+        function renderTileGrid() {
+            if (tileState.mode === 'frames') {
+                renderFrameTileGrid();
+            } else {
+                renderWormTileGrid();
+            }
+        }
+        
+        function renderFrameTileGrid() {
+            const container = document.getElementById('tile-grid-container');
+            const gridSize = tileState.gridSize;
+            const tilesPerPage = gridSize * gridSize;
+            const totalPages = Math.ceil(tileState.frameImages.length / tilesPerPage);
+            
+            // Update page info
+            const sourceLabel = {
+                'current_folder': 'folder',
+                'all_folders': 'all'
+            }[tileState.source] || '';
+            document.getElementById('tile-page-info').textContent = 
+                `Page ${tileState.currentPage + 1}/${Math.max(1, totalPages)} (${tileState.frameImages.length} frames in ${sourceLabel})`;
+            
+            // Update button states
+            document.getElementById('tile-prev-page').disabled = tileState.currentPage === 0;
+            document.getElementById('tile-next-page').disabled = tileState.currentPage >= totalPages - 1;
+            
+            // Set grid template
+            container.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            
+            // Get frames for current page
+            const startIdx = tileState.currentPage * tilesPerPage;
+            const pageFrames = tileState.frameImages.slice(startIdx, startIdx + tilesPerPage);
+            
+            if (pageFrames.length === 0) {
+                container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px; grid-column: 1/-1;">No frames to display</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            for (const frame of pageFrames) {
+                const tile = document.createElement('div');
+                tile.className = 'tile-item';
+                
+                // Check if this is the current video
+                const isCurrentVideo = frame.videoPath === state.currentVideoPath;
+                
+                tile.style.cssText = `
+                    background: #1a1a2e;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    transition: transform 0.15s, box-shadow 0.15s;
+                    display: flex;
+                    flex-direction: column;
+                    border: 2px solid ${isCurrentVideo ? '#4ecca3' : 'transparent'};
+                `;
+                
+                // QC status color
+                const qcColor = frame.qcComplete ? '#4ecca3' : '#ff8844';
+                const qcLabel = frame.qcComplete ? '✓ QC' : '⊘ QC';
+                
+                // Image area
+                const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = `
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 150px;
+                    background: #0f0f1a;
+                    position: relative;
+                `;
+                
+                if (frame.imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = frame.imageUrl;
+                    img.style.cssText = 'max-width: 100%; max-height: 200px; object-fit: contain;';
+                    imgContainer.appendChild(img);
+                } else {
+                    imgContainer.innerHTML = `<span style="color: #555; font-size: 11px;">No image</span>`;
+                }
+                
+                // Info bar
+                const infoBar = document.createElement('div');
+                infoBar.style.cssText = `
+                    padding: 6px 8px;
+                    background: #0f0f1a;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    font-size: 10px;
+                `;
+                
+                // First row: video name, worm count, QC status
+                const row1 = document.createElement('div');
+                row1.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+                
+                const videoLabel = document.createElement('span');
+                videoLabel.style.cssText = 'color: #4ecca3; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;';
+                videoLabel.textContent = frame.videoName;
+                videoLabel.title = frame.videoName;
+                
+                const wormCount = document.createElement('span');
+                wormCount.style.cssText = 'color: #888;';
+                wormCount.textContent = `🪱 ${frame.wormCount}`;
+                
+                const qcBadge = document.createElement('span');
+                qcBadge.style.cssText = `
+                    padding: 2px 5px;
+                    border-radius: 3px;
+                    background: ${qcColor}30;
+                    color: ${qcColor};
+                    font-weight: bold;
+                    font-size: 9px;
+                    cursor: pointer;
+                `;
+                qcBadge.textContent = qcLabel;
+                qcBadge.title = 'Click to toggle QC status';
+                
+                // Click on QC badge to toggle QC status
+                qcBadge.onclick = async (e) => {
+                    e.stopPropagation();  // Don't trigger tile click
+                    const newStatus = !frame.qcComplete;
+                    try {
+                        const result = await api(`/tile/qc_video?video_path=${encodeURIComponent(frame.videoPath)}&qc_complete=${newStatus}`, {
+                            method: 'POST'
+                        });
+                        if (result.success) {
+                            frame.qcComplete = newStatus;
+                            if (frame.frameData) frame.frameData.qc_complete = newStatus;
+                            // Update badge appearance
+                            const newQcColor = newStatus ? '#4ecca3' : '#ff8844';
+                            qcBadge.style.background = newQcColor + '30';
+                            qcBadge.style.color = newQcColor;
+                            qcBadge.textContent = newStatus ? '✓ QC' : '⊘ QC';
+                            setStatus(`${frame.videoName}: QC ${newStatus ? 'complete' : 'incomplete'}`);
+                        }
+                    } catch (err) {
+                        setStatus('Error updating QC: ' + err.message);
+                    }
+                };
+                
+                row1.appendChild(videoLabel);
+                row1.appendChild(wormCount);
+                row1.appendChild(qcBadge);
+                infoBar.appendChild(row1);
+                
+                // Second row: folder name (if showing all folders)
+                if (tileState.source === 'all_folders' && frame.folderName) {
+                    const row2 = document.createElement('div');
+                    row2.style.cssText = 'color: #666; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+                    row2.textContent = `📁 ${frame.folderName}`;
+                    row2.title = frame.folderName;
+                    infoBar.appendChild(row2);
+                }
+                
+                tile.appendChild(imgContainer);
+                tile.appendChild(infoBar);
+                
+                // Hover effects
+                tile.onmouseenter = () => {
+                    tile.style.transform = 'scale(1.02)';
+                    tile.style.boxShadow = '0 4px 15px rgba(78, 204, 163, 0.3)';
+                };
+                tile.onmouseleave = () => {
+                    tile.style.transform = 'scale(1)';
+                    tile.style.boxShadow = 'none';
+                };
+                
+                // Click to navigate to the video
+                tile.onclick = async () => {
+                    // Close modal first
+                    document.getElementById('tile-qc-modal').classList.remove('show');
+                    
+                    // Helper to update state after navigation
+                    const handleNavigationResult = (result) => {
+                        if (result.image) {
+                            state.annotations = result.annotations;
+                            state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
+                            clearMaskCache();
+                            drawFrame(result.image);
+                            updateAnnotationTree();
+                            if (result.folder_info) {
+                                updateFolderInfo(result.folder_info);
+                                state.folderInfo = result.folder_info;
+                            }
+                        }
+                    };
+                    
+                    // If it's a different video, we need to navigate there
+                    if (frame.videoPath !== state.currentVideoPath) {
+                        try {
+                            setStatus(`Navigating to ${frame.videoName}...`);
+                            
+                            // Check if we need to switch folders first
+                            const currentFolderIdx = state.folderInfo?.current_folder_index;
+                            const targetFolderIdx = frame.folderIndex;
+                            
+                            if (targetFolderIdx !== undefined && targetFolderIdx !== currentFolderIdx) {
+                                // Need to switch folders first
+                                setStatus(`Switching to folder ${frame.folderName || targetFolderIdx}...`);
+                                const folderResult = await api(`/folder/${targetFolderIdx}`);
+                                handleNavigationResult(folderResult);
+                                updateVideoList();
+                            }
+                            
+                            // Now find and navigate to the video within the folder
+                            const videos = await api('/videos');
+                            const targetVideoName = frame.videoName;
+                            const videoItem = videos.videos.find(v => v.name === targetVideoName);
+                            
+                            if (videoItem) {
+                                // Navigate to the video
+                                const result = await api(`/video/${videoItem.index}`);
+                                handleNavigationResult(result);
+                                setStatus(`Navigated to ${frame.videoName}`);
+                            } else {
+                                setStatus(`Could not find video ${frame.videoName}`);
+                            }
+                        } catch (e) {
+                            console.error('Error navigating to video:', e);
+                            setStatus('Error navigating to video: ' + e.message);
+                        }
+                    } else {
+                        setStatus(`Already on ${frame.videoName}`);
+                    }
+                };
+                
+                container.appendChild(tile);
+            }
+        }
+        
+        function renderWormTileGrid() {
+            const container = document.getElementById('tile-grid-container');
+            const gridSize = tileState.gridSize;
+            const tilesPerPage = gridSize * gridSize;
+            const totalPages = Math.ceil(tileState.wormImages.length / tilesPerPage);
+            
+            // Update page info with source context
+            const sourceLabel = {
+                'current_video': 'video',
+                'current_folder': 'folder',
+                'all_folders': 'all'
+            }[tileState.source] || '';
+            document.getElementById('tile-page-info').textContent = 
+                `Page ${tileState.currentPage + 1}/${Math.max(1, totalPages)} (${tileState.wormImages.length} worms in ${sourceLabel})`;
+            
+            // Update button states
+            document.getElementById('tile-prev-page').disabled = tileState.currentPage === 0;
+            document.getElementById('tile-next-page').disabled = tileState.currentPage >= totalPages - 1;
+            
+            // Set grid template
+            container.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            
+            // Get worms for current page
+            const startIdx = tileState.currentPage * tilesPerPage;
+            const pageWorms = tileState.wormImages.slice(startIdx, startIdx + tilesPerPage);
+            
+            if (pageWorms.length === 0) {
+                container.innerHTML = '<div style="color: #888; text-align: center; padding: 40px; grid-column: 1/-1;">No worms to display</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            const isMultiVideo = tileState.source !== 'current_video';
+            
+            for (const worm of pageWorms) {
+                const tile = document.createElement('div');
+                tile.className = 'tile-item';
+                
+                // Check if this is current worm in current video
+                const isCurrentWorm = worm.videoPath === state.currentVideoPath && worm.wormId === state.currentWormId;
+                
+                tile.style.cssText = `
+                    background: #1a1a2e;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    transition: transform 0.15s, box-shadow 0.15s;
+                    display: flex;
+                    flex-direction: column;
+                    border: 2px solid ${isCurrentWorm ? '#4ecca3' : 'transparent'};
+                `;
+                
+                // Health class badge color
+                let healthColor = '#888';
+                let healthLabel = '-';
+                if (worm.wormData.health_class) {
+                    healthLabel = worm.wormData.health_class;
+                    const healthColors = { 'A': '#00ff00', 'B': '#88ff00', 'C': '#ffff00', 'D': '#ff8800', 'E': '#ff0000' };
+                    healthColor = healthColors[worm.wormData.health_class] || '#888';
+                }
+                
+                // Image area
+                const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = `
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100px;
+                    background: #0f0f1a;
+                    position: relative;
+                `;
+                
+                if (worm.imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = worm.imageUrl;
+                    img.style.cssText = 'max-width: 100%; max-height: 150px; object-fit: contain;';
+                    imgContainer.appendChild(img);
+                } else {
+                    imgContainer.innerHTML = `<span style="color: #555; font-size: 11px;">No ${tileState.showType}</span>`;
+                }
+                
+                // Info bar
+                const infoBar = document.createElement('div');
+                infoBar.style.cssText = `
+                    padding: 6px 8px;
+                    background: #0f0f1a;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    font-size: 10px;
+                `;
+                
+                // First row: worm ID, health, status icons
+                const row1 = document.createElement('div');
+                row1.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+                
+                const wormLabel = document.createElement('span');
+                wormLabel.style.color = '#4ecca3';
+                wormLabel.style.fontWeight = 'bold';
+                wormLabel.textContent = `#${displayWormId(worm.wormId)}`;
+                
+                const healthBadge = document.createElement('span');
+                healthBadge.style.cssText = `
+                    padding: 2px 5px;
+                    border-radius: 3px;
+                    background: ${healthColor}30;
+                    color: ${healthColor};
+                    font-weight: bold;
+                    font-size: 10px;
+                `;
+                healthBadge.textContent = healthLabel;
+                
+                const statusIcons = document.createElement('span');
+                statusIcons.style.color = '#666';
+                let icons = [];
+                if (worm.wormData.has_mask) icons.push('🪱');
+                if (worm.wormData.has_head) icons.push('🟢');
+                if (worm.wormData.has_tail) icons.push('🔴');
+                if (worm.wormData.censored) icons.push('🚫');
+                statusIcons.textContent = icons.join('');
+                
+                row1.appendChild(wormLabel);
+                row1.appendChild(healthBadge);
+                row1.appendChild(statusIcons);
+                infoBar.appendChild(row1);
+                
+                // Second row: video name (for multi-video view)
+                if (isMultiVideo) {
+                    const row2 = document.createElement('div');
+                    row2.style.cssText = 'color: #666; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+                    const displayName = worm.folderName ? `${worm.folderName}/${worm.videoName}` : worm.videoName;
+                    row2.textContent = displayName;
+                    row2.title = displayName;
+                    infoBar.appendChild(row2);
+                }
+                
+                tile.appendChild(imgContainer);
+                tile.appendChild(infoBar);
+                
+                // Hover effects
+                tile.onmouseenter = () => {
+                    tile.style.transform = 'scale(1.02)';
+                    tile.style.boxShadow = '0 4px 15px rgba(78, 204, 163, 0.3)';
+                };
+                tile.onmouseleave = () => {
+                    tile.style.transform = 'scale(1)';
+                    tile.style.boxShadow = 'none';
+                };
+                
+                // Click to navigate to the worm
+                tile.onclick = async () => {
+                    // Close modal first
+                    document.getElementById('tile-qc-modal').classList.remove('show');
+                    
+                    // Helper to update state after navigation
+                    const handleNavigationResult = (result) => {
+                        if (result.image) {
+                            state.annotations = result.annotations;
+                            state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
+                            clearMaskCache();
+                            drawFrame(result.image);
+                            updateAnnotationTree();
+                            if (result.folder_info) {
+                                updateFolderInfo(result.folder_info);
+                                state.folderInfo = result.folder_info;
+                            }
+                        }
+                    };
+                    
+                    // If it's a different video, we need to navigate there first
+                    if (worm.videoPath !== state.currentVideoPath) {
+                        try {
+                            setStatus(`Navigating to ${worm.videoName}...`);
+                            
+                            // Check if we need to switch folders first
+                            const currentFolderIdx = state.folderInfo?.current_folder_index;
+                            const targetFolderIdx = worm.wormData.folder_index;
+                            
+                            if (targetFolderIdx !== undefined && targetFolderIdx !== currentFolderIdx) {
+                                // Need to switch folders first
+                                setStatus(`Switching to folder ${targetFolderIdx}...`);
+                                const folderResult = await api(`/folder/${targetFolderIdx}`);
+                                handleNavigationResult(folderResult);
+                                updateVideoList();
+                            }
+                            
+                            // Now find and navigate to the video within the folder
+                            const videos = await api('/videos');
+                            const targetVideoName = worm.videoName;
+                            const videoItem = videos.videos.find(v => v.name === targetVideoName);
+                            
+                            if (videoItem) {
+                                // Navigate to the video
+                                const result = await api(`/video/${videoItem.index}`);
+                                handleNavigationResult(result);
+                                // Now select the worm
+                                selectWorm(worm.wormId);
+                                setStatus(`Navigated to ${worm.videoName}, Worm ${displayWormId(worm.wormId)}`);
+                            } else {
+                                setStatus(`Could not find video ${worm.videoName}`);
+                            }
+                        } catch (e) {
+                            console.error('Error navigating to worm:', e);
+                            setStatus('Error navigating to worm: ' + e.message);
+                        }
+                    } else {
+                        // Same video, just select the worm
+                        selectWorm(worm.wormId);
+                        setStatus(`Selected Worm ${displayWormId(worm.wormId)}`);
+                    }
+                };
+                
+                container.appendChild(tile);
+            }
+        }
+        
+        // Keyboard navigation in tile modal
+        document.getElementById('tile-qc-modal').addEventListener('keydown', (e) => {
+            if (!document.getElementById('tile-qc-modal').classList.contains('show')) return;
+            
+            if (e.key === 'ArrowLeft') {
+                document.getElementById('tile-prev-page').click();
+                e.preventDefault();
+            } else if (e.key === 'ArrowRight') {
+                document.getElementById('tile-next-page').click();
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                document.getElementById('tile-qc-modal').classList.remove('show');
+            }
+        });
+        
         // Straighten modal events
         document.getElementById('straighten-close').onclick = () => {
             document.getElementById('straighten-modal').classList.remove('show');
@@ -2126,59 +4204,157 @@
             straightenState.mode = 'head';
             this.style.outline = '2px solid #00ff00';
             document.getElementById('straighten-mark-tail').style.outline = 'none';
-            document.getElementById('straighten-status').textContent = 'Click on the worm image to mark the HEAD position';
+            document.getElementById('straighten-status').textContent = 'Click and drag to draw a HEAD line across the worm';
         };
         
         document.getElementById('straighten-mark-tail').onclick = function() {
             straightenState.mode = 'tail';
             this.style.outline = '2px solid #ff0000';
             document.getElementById('straighten-mark-head').style.outline = 'none';
-            document.getElementById('straighten-status').textContent = 'Click on the worm image to mark the TAIL position';
+            document.getElementById('straighten-status').textContent = 'Click and drag to draw a TAIL line across the worm';
         };
         
-        document.getElementById('straighten-canvas').onclick = function(e) {
+        document.getElementById('straighten-download').onclick = function() {
+            if (!straightenState.imageData) {
+                alert('No image to download');
+                return;
+            }
+            
+            // Create a temporary canvas with the original (unscaled) image
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = straightenState.width;
+            tempCanvas.height = straightenState.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(straightenState.imageData, 0, 0);
+            
+            // Convert to PNG and download
+            const link = document.createElement('a');
+            link.download = `straightened_worm_${straightenState.wormId}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+            
+            document.getElementById('straighten-status').textContent = 'Image downloaded!';
+        };
+        
+        // Line drawing for straighten canvas - mousedown to start
+        document.getElementById('straighten-canvas').onmousedown = function(e) {
             if (!straightenState.mode) {
                 document.getElementById('straighten-status').textContent = 'First click "Mark Head" or "Mark Tail" button';
                 return;
             }
             
             const rect = this.getBoundingClientRect();
-            const y = Math.round((e.clientY - rect.top) / straightenState.scale);
+            const x = (e.clientX - rect.left) / straightenState.scale;
+            const y = (e.clientY - rect.top) / straightenState.scale;
+            
+            straightenState.drawing = true;
+            straightenState.startPoint = { x, y };
+        };
+        
+        // Line drawing - mousemove to preview
+        document.getElementById('straighten-canvas').onmousemove = function(e) {
+            if (!straightenState.drawing || !straightenState.startPoint) return;
+            
+            const rect = this.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / straightenState.scale;
+            const y = (e.clientY - rect.top) / straightenState.scale;
+            
+            // Draw preview line
+            const tempLine = {
+                x1: straightenState.startPoint.x,
+                y1: straightenState.startPoint.y,
+                x2: x,
+                y2: y
+            };
+            redrawStraightenCanvas(tempLine);
+        };
+        
+        // Line drawing - mouseup to finish
+        document.getElementById('straighten-canvas').onmouseup = function(e) {
+            if (!straightenState.drawing || !straightenState.startPoint) return;
+            
+            const rect = this.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / straightenState.scale;
+            const y = (e.clientY - rect.top) / straightenState.scale;
+            
+            const line = {
+                x1: straightenState.startPoint.x,
+                y1: straightenState.startPoint.y,
+                x2: x,
+                y2: y
+            };
             
             if (straightenState.mode === 'head') {
-                straightenState.headY = y;
-                document.getElementById('straighten-status').textContent = `Head marked at row ${y}. Now mark the tail.`;
+                straightenState.headLine = line;
+                const midX = Math.round((line.x1 + line.x2) / 2);
+                document.getElementById('straighten-status').textContent = `Head line drawn at position ~${midX}. Now draw the tail line.`;
                 straightenState.mode = null;
                 document.getElementById('straighten-mark-head').style.outline = 'none';
             } else if (straightenState.mode === 'tail') {
-                straightenState.tailY = y;
-                document.getElementById('straighten-status').textContent = `Tail marked at row ${y}. Click Apply to save.`;
+                straightenState.tailLine = line;
+                const midX = Math.round((line.x1 + line.x2) / 2);
+                document.getElementById('straighten-status').textContent = `Tail line drawn at position ~${midX}. Click Apply to save.`;
                 straightenState.mode = null;
                 document.getElementById('straighten-mark-tail').style.outline = 'none';
             }
             
+            straightenState.drawing = false;
+            straightenState.startPoint = null;
+            
             redrawStraightenCanvas();
         };
         
+        // Handle mouse leaving canvas while drawing
+        document.getElementById('straighten-canvas').onmouseleave = function(e) {
+            if (straightenState.drawing) {
+                // Cancel drawing
+                straightenState.drawing = false;
+                straightenState.startPoint = null;
+                redrawStraightenCanvas();
+            }
+        };
+        
         document.getElementById('straighten-apply').onclick = async function() {
-            if (straightenState.headY === null || straightenState.tailY === null) {
-                alert('Please mark both head and tail positions');
+            if (!straightenState.headLine || !straightenState.tailLine) {
+                alert('Please draw both head and tail lines');
                 return;
             }
             
-            // The straightened image goes from one end to the other along the skeleton
-            // We need to map the Y position back to a skeleton index
-            // For now, we'll store these as relative positions (0-1) along the worm length
-            const headRatio = straightenState.headY / straightenState.height;
-            const tailRatio = straightenState.tailY / straightenState.height;
-            
-            // TODO: Implement backend endpoint to convert straightened positions back to original coordinates
-            // For now, just show a message
-            setStatus(`Head at ${(headRatio * 100).toFixed(0)}%, Tail at ${(tailRatio * 100).toFixed(0)}% along skeleton`);
-            
-            document.getElementById('straighten-modal').classList.remove('show');
-            straightenState.wormId = null;
-            straightenState.imageData = null;
+            // Call backend to map straightened coordinates back to original image
+            try {
+                setStatus('Applying head/tail annotations...');
+                
+                const result = await api('/annotation/straightened/apply', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        worm_id: straightenState.wormId,
+                        head_line: straightenState.headLine,
+                        tail_line: straightenState.tailLine
+                    })
+                });
+                
+                if (result.success) {
+                    // Close modal
+                    document.getElementById('straighten-modal').classList.remove('show');
+                    
+                    // Reload frame to show updated annotations
+                    state.hasUnsavedChanges = true;
+                    await loadCurrentFrame();
+                    
+                    // Select the worm we just annotated
+                    selectWorm(straightenState.wormId);
+                    
+                    setStatus(`Head and tail set for Worm ${displayWormId(straightenState.wormId)} from straightened view`);
+                    
+                    straightenState.wormId = null;
+                    straightenState.imageData = null;
+                } else {
+                    throw new Error(result.error || 'Failed to apply annotations');
+                }
+            } catch (e) {
+                alert('Error applying annotations: ' + e.message);
+                setStatus('Error applying annotations');
+            }
         };
 
         // Skeleton toggle button
@@ -2187,6 +4363,37 @@
             this.textContent = state.showSkeleton ? '🦴 Hide Skeleton' : '🦴 Show Skeleton';
             this.style.background = state.showSkeleton ? '#4ecca3' : '';
             drawAnnotations();
+        };
+        
+        // Health class dropdown change handler
+        document.getElementById('health-class-select').onchange = async function() {
+            if (state.currentWormId === null || state.currentWormId === undefined) {
+                return;
+            }
+            const newClass = this.value;
+            if (!newClass) return;
+            
+            try {
+                const result = await api(`/annotation/${state.currentWormId}/health_class`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ health_class: newClass })
+                });
+                
+                // Update local annotation data
+                const annot = state.annotations.find(a => a.worm_id === state.currentWormId);
+                if (annot) {
+                    annot.health_class = result.health_class;
+                    annot.health_score = result.health_score;
+                    annot.health_classification = result.health_classification;
+                }
+                
+                updateStats();
+                setStatus(`Worm ${displayWormId(state.currentWormId)} health class set to ${newClass}`);
+            } catch (e) {
+                console.error('Failed to update health class:', e);
+                setStatus('Error updating health class', 'error');
+            }
         };
         
         // Draw mode toggle (box vs line for head/tail)
@@ -2212,9 +4419,14 @@
                 const result = await api('/navigate/prev', { method: 'POST' });
                 if (result.image) {
                     state.annotations = result.annotations;
-                    state.currentWormId = state.annotations[0]?.worm_id || null;
+                    state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
                     drawFrame(result.image);
                     updateAnnotationTree();
+                    if (result.folder_info) {
+                        updateFolderInfo(result.folder_info);
+                    }
+                    // Preload adjacent folders in background
+                    preloadAdjacentFolders();
                 }
             } catch (e) {
                 console.error(e);
@@ -2229,15 +4441,101 @@
                 const result = await api('/navigate/next', { method: 'POST' });
                 if (result.image) {
                     state.annotations = result.annotations;
-                    state.currentWormId = state.annotations[0]?.worm_id || null;
+                    state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
                     drawFrame(result.image);
                     updateAnnotationTree();
+                    if (result.folder_info) {
+                        updateFolderInfo(result.folder_info);
+                    }
+                    // Preload adjacent folders in background
+                    preloadAdjacentFolders();
                 }
             } catch (e) {
                 console.error(e);
             }
             hideLoading();
         };
+        
+        // Folder navigation
+        document.getElementById('prev-folder-btn').onclick = async () => {
+            showLoading('Loading folder...');
+            try {
+                clearMaskCache();
+                const result = await api('/navigate/prev_folder', { method: 'POST' });
+                if (result.image) {
+                    state.annotations = result.annotations;
+                    state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
+                    drawFrame(result.image);
+                    updateAnnotationTree();
+                    updateVideoList();
+                    if (result.folder_info) {
+                        updateFolderInfo(result.folder_info);
+                    }
+                    preloadAdjacentFolders();
+                    setStatus('Switched to previous folder');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            hideLoading();
+        };
+        
+        document.getElementById('next-folder-btn').onclick = async () => {
+            showLoading('Loading folder...');
+            try {
+                clearMaskCache();
+                const result = await api('/navigate/next_folder', { method: 'POST' });
+                if (result.image) {
+                    state.annotations = result.annotations;
+                    state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
+                    drawFrame(result.image);
+                    updateAnnotationTree();
+                    updateVideoList();
+                    if (result.folder_info) {
+                        updateFolderInfo(result.folder_info);
+                    }
+                    preloadAdjacentFolders();
+                    setStatus('Switched to next folder');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            hideLoading();
+        };
+        
+        async function updateVideoList() {
+            try {
+                const result = await api('/videos');
+                const list = document.getElementById('video-list');
+                list.innerHTML = result.videos.map(v => {
+                    const qcIndicator = v.qc_complete ? '<span style="color: #4CAF50; margin-right: 4px;" title="QC Complete">✓</span>' : '';
+                    return `<li class="${v.is_current ? 'active' : ''}" onclick="selectVideo(${v.index})">${qcIndicator}${v.name}</li>`;
+                }).join('');
+                
+                // Update QC button state for current video
+                updateQCButtonState();
+            } catch (e) {
+                console.error('Error updating video list:', e);
+            }
+        }
+        
+        async function updateQCButtonState() {
+            try {
+                const result = await api('/video/qc');
+                const btn = document.getElementById('qc-btn');
+                if (result.qc_complete) {
+                    btn.textContent = '☑ QC';
+                    btn.classList.add('active');
+                    btn.title = 'QC Complete - Click to unmark';
+                } else {
+                    btn.textContent = '☐ QC';
+                    btn.classList.remove('active');
+                    btn.title = 'Mark Video as QC Complete';
+                }
+            } catch (e) {
+                console.error('Error getting QC status:', e);
+            }
+        }
         
         // Save
         document.getElementById('save-btn').onclick = async () => {
@@ -2250,52 +4548,309 @@
             }
         };
         
-        // Export
+        // Export - show modal with summary
         document.getElementById('export-btn').onclick = async () => {
             try {
-                setStatus('Exporting to Excel...');
+                setStatus('Loading export summary...');
+                
+                // Fetch summary data
+                const summaryResult = await api('/export/summary');
+                
+                // Populate project summary
+                const projectDiv = document.getElementById('project-summary-content');
+                const ps = summaryResult.project_summary;
+                projectDiv.innerHTML = `
+                    <div><strong>Total Worms:</strong> ${ps.total_worms}</div>
+                    <div><strong>Total Videos:</strong> ${ps.total_videos}</div>
+                    <div><strong>Total Chips:</strong> ${ps.total_chips}</div>
+                    <div><strong>QC Complete:</strong> ${ps.qc_complete_count} videos</div>
+                    <div style="color: #4CAF50;"><strong>Healthy:</strong> ${ps.healthy_count} (${ps.healthy_pct}%)</div>
+                    <div style="color: #f44336;"><strong>Leaky:</strong> ${ps.leaky_count} (${ps.leaky_pct}%)</div>
+                    <div><strong>Avg Score:</strong> ${ps.avg_score}</div>
+                    <div><strong>With Masks:</strong> ${ps.with_masks} worms</div>
+                `;
+                
+                // Populate chip summary table
+                const tbody = document.getElementById('chip-summary-tbody');
+                tbody.innerHTML = '';
+                for (const chip of summaryResult.chip_summary) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 6px; border-bottom: 1px solid #222;">${chip.chip}</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #222; text-align: right;">${chip.total_worms}</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #222; text-align: right; color: #4CAF50;">${chip.healthy_count}</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #222; text-align: right; color: #f44336;">${chip.leaky_count}</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #222; text-align: right;">${chip.healthy_pct}%</td>
+                        <td style="padding: 6px; border-bottom: 1px solid #222; text-align: right;">${chip.avg_score}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+                
+                // Show modal
+                document.getElementById('export-modal').classList.add('show');
+                setStatus('Ready to export');
+            } catch (e) {
+                alert('Error loading summary: ' + e.message);
+                setStatus('Export failed');
+            }
+        };
+        
+        // Toggle export options based on export type
+        function toggleExportOptions() {
+            const exportType = document.querySelector('input[name="export-type"]:checked').value;
+            document.getElementById('excel-export-options').style.display = exportType === 'excel' ? 'block' : 'none';
+            document.getElementById('training-export-options').style.display = exportType === 'training' ? 'block' : 'none';
+            
+            if (exportType === 'training') {
+                updateTrainingPreview();
+            }
+        }
+        
+        // Update training preview stats
+        async function updateTrainingPreview() {
+            const statsDiv = document.getElementById('training-preview-stats');
+            if (!statsDiv) return;
+            
+            const qcOnly = document.getElementById('training-qc-only').checked;
+            const skipCensored = document.getElementById('training-skip-censored').checked;
+            const requireMask = document.getElementById('training-require-mask').checked;
+            const trainSplit = parseInt(document.getElementById('train-split').value);
+            
+            try {
                 const token = getAuthToken();
                 const headers = token ? { 'X-Auth-Token': token } : {};
                 
-                const response = await fetch('/api/export/excel', {
+                const params = new URLSearchParams({
+                    qc_only: qcOnly,
+                    skip_censored: skipCensored,
+                    require_mask: requireMask
+                });
+                
+                const response = await fetch(`/api/export/training/preview?${params}`, {
                     headers: headers,
                     credentials: 'include'
                 });
                 
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        window.location.href = '/login';
-                        return;
-                    }
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Export failed');
+                if (response.ok) {
+                    const data = await response.json();
+                    const trainCount = Math.floor(data.eligible_videos * trainSplit / 100);
+                    const valCount = data.eligible_videos - trainCount;
+                    
+                    statsDiv.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                            <span>📹 Eligible Videos:</span>
+                            <span style="color: #4ecca3;"><strong>${data.eligible_videos}</strong> / ${data.total_videos}</span>
+                            <span>🐛 Eligible Worms:</span>
+                            <span style="color: #4ecca3;"><strong>${data.eligible_worms}</strong> / ${data.total_worms}</span>
+                            <span>📊 Train/Val Split:</span>
+                            <span style="color: #4ecca3;">~${trainCount} train / ~${valCount} val</span>
+                        </div>
+                    `;
+                } else {
+                    statsDiv.innerHTML = '<span style="color: #e94560;">Failed to load preview</span>';
                 }
-                
-                // Download the file
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                
-                // Get filename from Content-Disposition header or use default
-                const disposition = response.headers.get('content-disposition');
-                let filename = 'worm_annotations.xlsx';
-                if (disposition) {
-                    const match = disposition.match(/filename=([^;]+)/);
-                    if (match) {
-                        filename = match[1].replace(/"/g, '');
-                    }
-                }
-                
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                setStatus('Exported to ' + filename);
             } catch (e) {
-                alert('Error exporting: ' + e.message);
-                setStatus('Export failed');
+                statsDiv.innerHTML = '<span style="color: #e94560;">Error loading preview</span>';
+            }
+        }
+        
+        // Add event listeners for training options
+        document.getElementById('training-qc-only').onchange = updateTrainingPreview;
+        document.getElementById('training-skip-censored').onchange = updateTrainingPreview;
+        document.getElementById('training-require-mask').onchange = updateTrainingPreview;
+        document.getElementById('train-split').oninput = function(e) {
+            document.getElementById('split-value').textContent = e.target.value;
+            document.getElementById('split-val-value').textContent = 100 - e.target.value;
+            updateTrainingPreview();
+        };
+        
+        // Export modal close
+        document.getElementById('export-close').onclick = () => {
+            document.getElementById('export-modal').classList.remove('show');
+        };
+        
+        // Export cancel button
+        document.getElementById('export-cancel').onclick = async () => {
+            try {
+                const token = getAuthToken();
+                const headers = token ? { 'Content-Type': 'application/json', 'X-Auth-Token': token } : { 'Content-Type': 'application/json' };
+                await fetch('/api/export/cancel', { method: 'POST', headers, credentials: 'include' });
+            } catch (e) {
+                console.error('Error cancelling export:', e);
+            }
+        };
+        
+        // Export download
+        document.getElementById('export-download').onclick = async () => {
+            const exportType = document.querySelector('input[name="export-type"]:checked').value;
+            
+            if (exportType === 'excel') {
+                // Excel export with streaming progress
+                const exportMode = document.querySelector('input[name="export-mode"]:checked').value;
+                const excludeCensored = document.getElementById('excel-exclude-censored').checked;
+                
+                // Show progress UI
+                document.getElementById('export-progress-section').style.display = 'block';
+                document.getElementById('export-download').disabled = true;
+                document.getElementById('export-cancel').style.display = '';
+                document.getElementById('export-progress-bar').style.width = '0%';
+                document.getElementById('export-progress-text').textContent = '0 / 0 worms';
+                document.getElementById('export-progress-percent').textContent = '0%';
+                document.getElementById('export-stat-processed').textContent = '0';
+                document.getElementById('export-stat-masks').textContent = '0';
+                document.getElementById('export-current-video').textContent = 'Video: Starting...';
+                
+                setStatus('Exporting to Excel...');
+                
+                try {
+                    const token = getAuthToken();
+                    const url = `/api/export/excel/stream?mode=${exportMode}&exclude_censored=${excludeCensored}`;
+                    
+                    // Use EventSource for SSE
+                    const eventSource = new EventSource(url);
+                    let totalWorms = 0;
+                    
+                    eventSource.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'start') {
+                            totalWorms = data.total_worms;
+                            document.getElementById('export-progress-text').textContent = `0 / ${totalWorms} worms`;
+                        } else if (data.type === 'progress') {
+                            const pct = Math.round((data.current / data.total) * 100);
+                            document.getElementById('export-progress-bar').style.width = pct + '%';
+                            document.getElementById('export-progress-percent').textContent = pct + '%';
+                            document.getElementById('export-progress-text').textContent = `${data.current} / ${data.total} worms`;
+                            document.getElementById('export-stat-processed').textContent = data.current;
+                            document.getElementById('export-current-video').textContent = `Video: ${data.video}`;
+                        } else if (data.type === 'building') {
+                            document.getElementById('export-current-video').textContent = data.message;
+                        } else if (data.type === 'complete') {
+                            eventSource.close();
+                            
+                            // Update stats
+                            document.getElementById('export-progress-bar').style.width = '100%';
+                            document.getElementById('export-progress-percent').textContent = '100%';
+                            document.getElementById('export-stat-masks').textContent = data.masks_processed;
+                            
+                            // Download the file from base64
+                            const byteCharacters = atob(data.data);
+                            const byteNumbers = new Array(byteCharacters.length);
+                            for (let i = 0; i < byteCharacters.length; i++) {
+                                byteNumbers[i] = byteCharacters.charCodeAt(i);
+                            }
+                            const byteArray = new Uint8Array(byteNumbers);
+                            const blob = new Blob([byteArray], { type: data.media_type });
+                            
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = data.filename;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            
+                            // Reset UI
+                            document.getElementById('export-progress-section').style.display = 'none';
+                            document.getElementById('export-download').disabled = false;
+                            document.getElementById('export-cancel').style.display = 'none';
+                            document.getElementById('export-modal').classList.remove('show');
+                            setStatus('Exported to ' + data.filename);
+                        } else if (data.type === 'cancelled') {
+                            eventSource.close();
+                            document.getElementById('export-progress-section').style.display = 'none';
+                            document.getElementById('export-download').disabled = false;
+                            document.getElementById('export-cancel').style.display = 'none';
+                            setStatus('Export cancelled');
+                        } else if (data.type === 'error') {
+                            eventSource.close();
+                            document.getElementById('export-progress-section').style.display = 'none';
+                            document.getElementById('export-download').disabled = false;
+                            document.getElementById('export-cancel').style.display = 'none';
+                            alert('Export error: ' + data.message);
+                            setStatus('Export failed');
+                        }
+                    };
+                    
+                    eventSource.onerror = (e) => {
+                        eventSource.close();
+                        document.getElementById('export-progress-section').style.display = 'none';
+                        document.getElementById('export-download').disabled = false;
+                        document.getElementById('export-cancel').style.display = 'none';
+                        alert('Export connection error');
+                        setStatus('Export failed');
+                    };
+                } catch (e) {
+                    document.getElementById('export-progress-section').style.display = 'none';
+                    document.getElementById('export-download').disabled = false;
+                    document.getElementById('export-cancel').style.display = 'none';
+                    alert('Error exporting: ' + e.message);
+                    setStatus('Export failed');
+                }
+            } else {
+                // Training dataset export
+                const trainingFormat = document.querySelector('input[name="training-format"]:checked').value;
+                const trainSplit = parseInt(document.getElementById('train-split').value) / 100;
+                const qcOnly = document.getElementById('training-qc-only').checked;
+                const skipCensored = document.getElementById('training-skip-censored').checked;
+                const requireMask = document.getElementById('training-require-mask').checked;
+                
+                try {
+                    setStatus('Generating training dataset...');
+                    const token = getAuthToken();
+                    const headers = token ? { 'X-Auth-Token': token } : {};
+                    
+                    const params = new URLSearchParams({
+                        format: trainingFormat,
+                        train_split: trainSplit,
+                        qc_only: qcOnly,
+                        skip_censored: skipCensored,
+                        require_mask: requireMask
+                    });
+                    
+                    const response = await fetch(`/api/export/training?${params}`, {
+                        headers: headers,
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '/login';
+                            return;
+                        }
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Training export failed');
+                    }
+                    
+                    // Download the ZIP file
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    // Get filename from Content-Disposition header or use default
+                    const disposition = response.headers.get('content-disposition');
+                    let filename = 'training_dataset.zip';
+                    if (disposition) {
+                        const match = disposition.match(/filename=([^;]+)/);
+                        if (match) {
+                            filename = match[1].replace(/"/g, '');
+                        }
+                    }
+                    
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    document.getElementById('export-modal').classList.remove('show');
+                    setStatus('Training dataset exported: ' + filename);
+                } catch (e) {
+                    alert('Error exporting training dataset: ' + e.message);
+                    setStatus('Training export failed');
+                }
             }
         };
         
@@ -2331,7 +4886,19 @@
         };
         
         document.getElementById('zoom-fit').onclick = () => {
-            state.zoom = 1;
+            // Calculate zoom to fit image in container
+            const container = document.querySelector('.canvas-container');
+            const containerWidth = container.clientWidth - 40; // padding
+            const containerHeight = container.clientHeight - 40;
+            
+            if (state.imageWidth && state.imageHeight) {
+                const scaleX = containerWidth / state.imageWidth;
+                const scaleY = containerHeight / state.imageHeight;
+                state.zoom = Math.min(scaleX, scaleY, 1); // Don't zoom beyond 100%
+                state.zoom = Math.max(0.1, Math.round(state.zoom * 100) / 100); // Min 10%, round to 2 decimals
+            } else {
+                state.zoom = 1;
+            }
             updateZoom();
         };
         
@@ -2367,6 +4934,11 @@
             try {
                 const result = await api('/videos');
                 const list = document.getElementById('video-list');
+                
+                // Update folder info
+                if (result.folder_info) {
+                    updateFolderInfo(result.folder_info);
+                }
                 
                 if (result.videos && result.videos.length > 0) {
                     list.innerHTML = result.videos.map((video, idx) => 
@@ -2509,6 +5081,26 @@
         
         // Canvas mouse events for drawing and editing boxes
         annotCanvas.onmousedown = (e) => {
+            const canvasContainer = document.querySelector('.canvas-container');
+            
+            // Check if we should start panning:
+            // 1. Middle mouse button (button === 1)
+            // 2. Space key is pressed
+            // 3. Pan mode is active
+            const shouldPan = e.button === 1 || state.spacePressed || state.mode === 'pan';
+            
+            if (shouldPan && e.button !== 2) {  // Not right click
+                e.preventDefault();
+                state.isPanning = true;
+                state.panStart = { x: e.clientX, y: e.clientY };
+                state.scrollStart = { 
+                    x: canvasContainer.scrollLeft, 
+                    y: canvasContainer.scrollTop 
+                };
+                annotCanvas.style.cursor = 'grabbing';
+                return;
+            }
+            
             const coords = getImageCoordinates(e);
             
             // Handle brush mode
@@ -2550,6 +5142,16 @@
         };
         
         annotCanvas.onmousemove = (e) => {
+            // Handle panning
+            if (state.isPanning && state.panStart) {
+                const canvasContainer = document.querySelector('.canvas-container');
+                const dx = e.clientX - state.panStart.x;
+                const dy = e.clientY - state.panStart.y;
+                canvasContainer.scrollLeft = state.scrollStart.x - dx;
+                canvasContainer.scrollTop = state.scrollStart.y - dy;
+                return;
+            }
+            
             const coords = getImageCoordinates(e);
             
             // Handle brush mode
@@ -2614,6 +5216,22 @@
         };
         
         annotCanvas.onmouseup = async (e) => {
+            // Handle pan release
+            if (state.isPanning) {
+                state.isPanning = false;
+                state.panStart = null;
+                state.scrollStart = null;
+                // Restore cursor
+                if (state.spacePressed || state.mode === 'pan') {
+                    annotCanvas.style.cursor = 'grab';
+                } else if (state.mode === 'select') {
+                    annotCanvas.style.cursor = 'default';
+                } else {
+                    annotCanvas.style.cursor = 'crosshair';
+                }
+                return;
+            }
+            
             const coords = getImageCoordinates(e);
             
             // Handle brush mode release
@@ -2890,6 +5508,41 @@
             }
         };
         
+        // Prevent default middle-click behavior (auto-scroll)
+        annotCanvas.onauxclick = (e) => {
+            if (e.button === 1) {
+                e.preventDefault();
+            }
+        };
+        
+        // Global mouse up handler to stop panning when mouse released anywhere
+        document.addEventListener('mouseup', (e) => {
+            if (state.isPanning) {
+                state.isPanning = false;
+                state.panStart = null;
+                state.scrollStart = null;
+                // Restore cursor
+                if (state.spacePressed || state.mode === 'pan') {
+                    annotCanvas.style.cursor = 'grab';
+                } else if (state.mode === 'select') {
+                    annotCanvas.style.cursor = 'default';
+                } else {
+                    annotCanvas.style.cursor = 'crosshair';
+                }
+            }
+        });
+        
+        // Global mouse move handler for panning when mouse goes outside canvas
+        document.addEventListener('mousemove', (e) => {
+            if (state.isPanning && state.panStart) {
+                const canvasContainer = document.querySelector('.canvas-container');
+                const dx = e.clientX - state.panStart.x;
+                const dy = e.clientY - state.panStart.y;
+                canvasContainer.scrollLeft = state.scrollStart.x - dx;
+                canvasContainer.scrollTop = state.scrollStart.y - dy;
+            }
+        });
+        
         // Keyboard shortcuts
         document.onkeydown = (e) => {
             if (e.target.tagName === 'INPUT') return;
@@ -2973,6 +5626,36 @@
                     document.getElementById('help-modal').classList.remove('show');
                     document.getElementById('folder-modal').classList.remove('show');
                     break;
+                case ' ':  // Space key for pan
+                    e.preventDefault();
+                    if (!state.spacePressed) {
+                        state.spacePressed = true;
+                        annotCanvas.style.cursor = 'grab';
+                    }
+                    break;
+                case 'p':  // Pan mode shortcut
+                    document.getElementById('pan-mode').click();
+                    break;
+                case 'g':  // Grid/Tile QC view
+                    document.getElementById('tile-qc-btn').click();
+                    break;
+            }
+        };
+        
+        // Handle keyup for spacebar pan release
+        document.onkeyup = (e) => {
+            if (e.key === ' ') {
+                state.spacePressed = false;
+                if (!state.isPanning) {
+                    // Restore cursor based on current mode
+                    if (state.mode === 'pan') {
+                        annotCanvas.style.cursor = 'grab';
+                    } else if (state.mode === 'select') {
+                        annotCanvas.style.cursor = 'default';
+                    } else {
+                        annotCanvas.style.cursor = 'crosshair';
+                    }
+                }
             }
         };
         
@@ -2984,6 +5667,16 @@
                 return e.returnValue;
             }
         };
+        
+        // Close modals when clicking outside (on the backdrop)
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                // Only close if clicking directly on the modal backdrop, not its content
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        });
         
         // Initial setup
         (async () => {
@@ -3016,8 +5709,10 @@
                         
                         // Show folder path
                         if (status.folder_path) {
-                            document.getElementById('current-folder-path').textContent = status.folder_path;
+                            document.getElementById('current-folder-name').textContent = status.folder_path.split('/').pop() || status.folder_path;
                             document.getElementById('current-folder').style.display = 'block';
+                            // Update folder navigation info
+                            await updateFolderInfo();
                         }
                         
                         setStatus('Dataset loaded - Ready to annotate');
@@ -3033,6 +5728,33 @@
                 }
             }
         })();
+        
+        // Handle window resize - debounced auto-fit
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (state.imageWidth && state.imageHeight) {
+                    const container = document.querySelector('.canvas-container');
+                    if (container) {
+                        const containerWidth = container.clientWidth - 40;
+                        const containerHeight = container.clientHeight - 40;
+                        
+                        // Only auto-fit if zoom would be less than current or on small screens
+                        const scaleX = containerWidth / state.imageWidth;
+                        const scaleY = containerHeight / state.imageHeight;
+                        const fitZoom = Math.min(scaleX, scaleY, 1);
+                        
+                        // Auto-fit on small screens or if current zoom makes image overflow
+                        if (window.innerWidth < 900 || state.zoom > fitZoom * 1.2) {
+                            state.zoom = Math.max(0.1, Math.round(fitZoom * 100) / 100);
+                        }
+                        // Always re-center after resize
+                        updateZoom();
+                    }
+                }
+            }, 250); // Debounce 250ms
+        });
     </script>
 </body>
 </html>

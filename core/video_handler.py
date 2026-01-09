@@ -350,6 +350,43 @@ class VideoHandler:
         """Clear the frame cache."""
         self._frame_cache.clear()
     
+    def preload_folder_frames(self, folder_index: int) -> bool:
+        """
+        Preload first frames for all videos in a folder.
+        
+        Args:
+            folder_index: Index of folder to preload
+            
+        Returns:
+            True if successful
+        """
+        if folder_index < 0 or folder_index >= len(self.folder_list):
+            return False
+        
+        folder = self.folder_list[folder_index]
+        folder_key = str(folder.path)
+        videos = self.videos_by_folder.get(folder_key, [])
+        
+        for video_path in videos:
+            path_str = str(video_path)
+            if path_str not in self._frame_cache:
+                cap = cv2.VideoCapture(path_str)
+                if cap.isOpened():
+                    ret, frame = cap.read()
+                    cap.release()
+                    if ret and frame is not None:
+                        # Convert BGR to RGB to match get_first_frame format
+                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        self._frame_cache[path_str] = frame_rgb
+        
+        return True
+    
+    def get_adjacent_folder_indices(self) -> Tuple[Optional[int], Optional[int]]:
+        """Get indices of previous and next folders (for preloading)."""
+        prev_idx = self.current_folder_index - 1 if self.current_folder_index > 0 else None
+        next_idx = self.current_folder_index + 1 if self.current_folder_index < len(self.folder_list) - 1 else None
+        return prev_idx, next_idx
+    
     def get_position_string(self) -> str:
         """Get current position as string (e.g., '3/47')."""
         total = len(self.video_list)

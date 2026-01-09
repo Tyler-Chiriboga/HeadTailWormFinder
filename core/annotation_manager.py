@@ -26,6 +26,9 @@ class WormAnnotation:
     confidence: float = 0.0
     notes: str = ""
     censored: bool = False                                             # Exclude from analysis
+    health_score: Optional[float] = None                               # Health CNN score (0-1)
+    health_classification: Optional[str] = None                        # "Healthy" or "Leaky"
+    health_class: Optional[str] = None                                 # A, B, C, D, E (A=0, B=0.25, C=0.5, D=0.75, E=1)
     
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -41,7 +44,10 @@ class WormAnnotation:
             'tail_mask_path': self.tail_mask_path,
             'confidence': self.confidence,
             'notes': self.notes,
-            'censored': self.censored
+            'censored': self.censored,
+            'health_score': self.health_score,
+            'health_classification': self.health_classification,
+            'health_class': self.health_class
         }
     
     @classmethod
@@ -59,7 +65,10 @@ class WormAnnotation:
             tail_mask_path=data.get('tail_mask_path'),
             confidence=data.get('confidence', 0.0),
             notes=data.get('notes', ''),
-            censored=data.get('censored', False)
+            censored=data.get('censored', False),
+            health_score=data.get('health_score'),
+            health_classification=data.get('health_classification'),
+            health_class=data.get('health_class')
         )
     
     def is_complete(self) -> bool:
@@ -79,6 +88,8 @@ class VideoAnnotations:
     annotations: Dict[int, WormAnnotation] = None  # worm_id -> annotation
     created_at: str = ""
     modified_at: str = ""
+    qc_complete: bool = False  # Whether QC has been completed for this video
+    qc_timestamp: str = ""  # When QC was completed
     
     def __post_init__(self):
         if self.annotations is None:
@@ -98,7 +109,9 @@ class VideoAnnotations:
                 str(k): v.to_dict() for k, v in self.annotations.items()
             },
             'created_at': self.created_at,
-            'modified_at': self.modified_at
+            'modified_at': self.modified_at,
+            'qc_complete': self.qc_complete,
+            'qc_timestamp': self.qc_timestamp
         }
     
     @classmethod
@@ -118,7 +131,9 @@ class VideoAnnotations:
             frame_height=data.get('frame_height', 0),
             annotations=annotations,
             created_at=data.get('created_at', ''),
-            modified_at=data.get('modified_at', '')
+            modified_at=data.get('modified_at', ''),
+            qc_complete=data.get('qc_complete', False),
+            qc_timestamp=data.get('qc_timestamp', '')
         )
 
 
@@ -400,6 +415,29 @@ class AnnotationManager:
         video_annot.modified_at = datetime.now().isoformat()
         self._unsaved_changes = True
         return True
+    
+    def set_video_qc_complete(
+        self,
+        video_path: str,
+        qc_complete: bool
+    ) -> bool:
+        """Set QC complete status for a video."""
+        if video_path not in self.annotations:
+            return False
+        
+        video_annot = self.annotations[video_path]
+        video_annot.qc_complete = qc_complete
+        video_annot.qc_timestamp = datetime.now().isoformat() if qc_complete else ""
+        video_annot.modified_at = datetime.now().isoformat()
+        self._unsaved_changes = True
+        return True
+    
+    def get_video_qc_status(self, video_path: str) -> Tuple[bool, str]:
+        """Get QC complete status for a video. Returns (qc_complete, qc_timestamp)."""
+        if video_path not in self.annotations:
+            return False, ""
+        video_annot = self.annotations[video_path]
+        return video_annot.qc_complete, video_annot.qc_timestamp
     
     def delete_worm_annotation(self, video_path: str, worm_id: int) -> bool:
         """Delete a worm annotation."""

@@ -6,11 +6,20 @@ A comprehensive worm annotation tool for scientific research, featuring automate
 
 - **Automated Worm Detection**: Uses custom-trained YOLOv7 model to detect worms in video frames
 - **Precise Segmentation**: SAM (Segment Anything Model) for pixel-perfect worm segmentation
-- **Head/Tail Annotation**: Manual annotation tools for marking worm head and tail positions
+- **Health Classification**: CNN-based health scoring with automatic Healthy/Leaky classification
+- **Head/Tail Annotation**: Manual annotation tools for marking worm head and tail positions (boxes or lines)
 - **Dual Interface**: Desktop (PyQt5) and Web (FastAPI) versions
 - **Multi-GPU Support**: Utilizes multiple GPUs for parallel model inference
-- **Batch Processing**: Process entire video folders with automatic annotation saving
-- **Export Options**: Export annotations to Excel or JSON for analysis
+- **Batch Processing**: Process entire video folders or projects with skip options for QC'd/detected videos
+- **Quality Control (QC) Tracking**: Mark videos as reviewed and track QC progress across project
+- **Auto-Detection**: Automatically runs detection when navigating to new folders
+- **Export Options**:
+  - **Excel/CSV**: Spreadsheets with annotations and health statistics (project-level and per-chip)
+  - **Training Datasets**: YOLO format exports for detection and segmentation model training
+    - Configurable train/val split (by video to prevent data leakage)
+    - YOLO Detection format (bounding boxes)
+    - YOLOv8 Segmentation format (polygon masks)
+    - Generates ready-to-use dataset with `data.yaml`
 
 ## System Requirements
 
@@ -198,18 +207,30 @@ DEFAULT_DATASET_PATH = "/path/to/your/videos"
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| \`/api/detect\` | POST | Run YOLO detection |
-| \`/api/segment\` | POST | Run SAM segmentation |
+| `/api/detect` | POST | Run YOLO detection on current video |
+| `/api/detect/batch` | POST | Batch detection (folder or project scope) |
+| `/api/detect/preview` | GET | Preview stats for batch detection |
+| `/api/segment` | POST | Run SAM segmentation on selected worm |
 
 ### Annotations
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| \`/api/annotation/head\` | POST | Set head box for worm |
-| \`/api/annotation/tail\` | POST | Set tail box for worm |
-| \`/api/annotation/{worm_id}\` | DELETE | Delete worm annotation |
-| \`/api/save\` | POST | Save all annotations |
-| \`/api/export/excel\` | GET | Export to Excel/JSON |
+| `/api/annotation/head` | POST | Set head box for worm |
+| `/api/annotation/tail` | POST | Set tail box for worm |
+| `/api/annotation/{worm_id}` | DELETE | Delete worm annotation |
+| `/api/annotation/{worm_id}/censor` | POST | Toggle censored status |
+| `/api/qc/toggle` | POST | Toggle QC complete status for video |
+| `/api/save` | POST | Save all annotations |
+
+### Export
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/export/summary` | GET | Get export statistics for modal display |
+| `/api/export/excel` | GET | Export to Excel (project/chip/both modes) |
+| `/api/export/training` | GET | Export YOLO training dataset (detect/segment/both) |
+| `/api/export/training/preview` | GET | Preview training export statistics |
 
 ### Admin (requires admin role)
 
@@ -224,9 +245,12 @@ DEFAULT_DATASET_PATH = "/path/to/your/videos"
 ### 1. Load Videos
 - Desktop: File → Open Folder, or click "📁 Open Folder"
 - Web: Click "📁 Open Folder" and enter path
+- Auto-detection runs automatically when navigating to new folders
 
 ### 2. Run Detection
-- Click "🔍 Detect" or press \`D\`
+- Click "🔍 Detect" or press \`D\` for single video
+- Click "🚀 Batch Detect" to process multiple videos at once
+- Options to skip already QC'd videos or those with existing detections
 - YOLO will detect all worms in the frame
 - Each worm gets a blue bounding box with ID
 
@@ -236,22 +260,47 @@ DEFAULT_DATASET_PATH = "/path/to/your/videos"
 
 ### 4. Annotate Head and Tail
 - Press \`H\` or click "🟢 Head" to enter head mode
-- Draw a box around the worm's head
+- Draw a box around the worm's head (or line with \`L\` toggle)
 - Press \`T\` or click "🔴 Tail" to enter tail mode
-- Draw a box around the worm's tail
+- Draw a box around the worm's tail (or line with \`L\` toggle)
 
 ### 5. Run Segmentation (Optional)
 - Select a worm and click "✂️ Segment"
 - SAM will generate a pixel-perfect mask
 - Masks are shown as colored overlays
+- Use brush tools to refine masks if needed
 
-### 6. Save Annotations
+### 6. Review Health Classification
+- Each worm is automatically scored by CNN classifier
+- **Healthy**: Score < 0.5 (shown in green)
+- **Leaky**: Score ≥ 0.5 (shown in red)
+- Mark problematic worms as **Censored** to exclude from analysis
+
+### 7. Mark as QC'd
+- Click "✅ Mark as QC'd" when you've verified all annotations
+- QC'd videos show a green checkmark in the sidebar
+- QC status is tracked in exports and can filter batch operations
+
+### 8. Save Annotations
 - Press \`Ctrl+S\` or click "💾 Save"
 - Annotations are saved as JSON in the \`annotations/\` folder
 
-### 7. Navigate to Next Video
+### 9. Navigate to Next Video
 - Press \`→\` or click "Next ▶"
 - Annotations are auto-saved when navigating
+
+### 10. Export Data
+- Click "📊 Export" to open export modal
+- **Excel/CSV Export**: Spreadsheet with all annotations and statistics
+  - Project-level: Single file with all data
+  - Per-chip: Separate file for each chip/folder
+  - Includes summary sheets with health statistics
+- **Training Dataset Export**: YOLO format for AI training
+  - YOLO Detection: Bounding boxes (class x_center y_center width height)
+  - YOLO Segmentation: Polygon masks (class x1 y1 x2 y2 ... xn yn)
+  - Configurable train/val split (80/20 default)
+  - Filter options: QC'd only, skip censored, require masks
+  - Generates \`data.yaml\` and folder structure for training
 
 ## Annotation File Format
 
@@ -261,13 +310,18 @@ Annotations are stored as JSON files:
 {
   "video_path": "/path/to/video.avi",
   "frame_number": 0,
+  "qc_complete": true,
   "annotations": [
     {
       "worm_id": 1,
       "detection_box": [x1, y1, x2, y2],
       "head_box": [x1, y1, x2, y2],
       "tail_box": [x1, y1, x2, y2],
+      "head_line": [x1, y1, x2, y2],
+      "tail_line": [x1, y1, x2, y2],
       "confidence": 0.95,
+      "health_score": 0.23,
+      "censored": false,
       "segmentation_mask_path": "masks/video_worm1_worm.png",
       "head_mask_path": "masks/video_worm1_head.png",
       "tail_mask_path": "masks/video_worm1_tail.png"
@@ -275,6 +329,51 @@ Annotations are stored as JSON files:
   ]
 }
 ```
+
+### Field Descriptions:
+- **qc_complete**: Whether the video has been reviewed and marked as QC'd
+- **detection_box**: YOLO-detected bounding box [x1, y1, x2, y2]
+- **head_box/tail_box**: Manual head/tail bounding boxes
+- **head_line/tail_line**: Manual head/tail line annotations [x1, y1, x2, y2]
+- **confidence**: YOLO detection confidence (0-1)
+- **health_score**: CNN health classification score (0-1, ≥0.5 = Leaky, <0.5 = Healthy)
+- **censored**: Whether worm should be excluded from analysis
+- **segmentation_mask_path**: Path to SAM-generated worm mask PNG
+
+## Training Dataset Format
+
+When exporting for YOLO training, the following structure is generated:
+
+```
+training_dataset/
+├── detect/                    # Detection format
+│   ├── images/
+│   │   ├── train/            # Training images
+│   │   └── val/              # Validation images
+│   ├── labels/
+│   │   ├── train/            # Training labels (YOLO format)
+│   │   └── val/              # Validation labels
+│   └── data.yaml             # Dataset configuration
+│
+├── segment/                   # Segmentation format
+│   ├── images/
+│   │   ├── train/
+│   │   └── val/
+│   ├── labels/               # Polygon annotations
+│   │   ├── train/
+│   │   └── val/
+│   └── data.yaml
+│
+└── README.md                  # Usage instructions
+```
+
+**Detection Label Format** (per line): `class_id x_center y_center width height`
+- All values normalized to 0-1
+- Example: `0 0.523 0.412 0.156 0.089`
+
+**Segmentation Label Format** (per line): `class_id x1 y1 x2 y2 ... xn yn`
+- Polygon points, all normalized to 0-1
+- Example: `0 0.45 0.38 0.52 0.35 0.58 0.41 ...`
 
 ## Troubleshooting
 

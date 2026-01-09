@@ -240,18 +240,24 @@ class YOLODetector:
         
         return detections
     
-    def detect(self, image: np.ndarray) -> List[Detection]:
+    def detect(self, image: np.ndarray, conf_threshold: float = None) -> List[Detection]:
         """
         Detect worms in an image.
         
         Args:
             image: RGB image as numpy array (H, W, C)
+            conf_threshold: Optional override for confidence threshold
             
         Returns:
             List of Detection objects
         """
         if self.model is None:
             raise RuntimeError("Model not loaded")
+        
+        # Use provided threshold or fall back to instance default
+        if conf_threshold is not None:
+            old_threshold = self.conf_threshold
+            self.conf_threshold = conf_threshold
         
         # Preprocess
         tensor = self._preprocess(image)
@@ -262,6 +268,10 @@ class YOLODetector:
         
         # Postprocess
         detections = self._postprocess(predictions, tensor.shape[2:])
+        
+        # Restore original threshold if we changed it
+        if conf_threshold is not None:
+            self.conf_threshold = old_threshold
         
         return detections
     
