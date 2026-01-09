@@ -1513,7 +1513,8 @@
             scrollStart: null,
             spacePressed: false,
             // Folder info (set by API responses)
-            folderInfo: null
+            folderInfo: null,
+            currentVideoPath: null
         };
         
         // Helper to display worm IDs
@@ -2881,6 +2882,7 @@
                 
                 const result = await api('/frame');
                 state.annotations = result.annotations;
+                state.currentVideoPath = result.video_path || null;
                 // Handle worm_id=0 correctly (don't use || which treats 0 as falsy)
                 state.currentWormId = state.annotations.length > 0 ? state.annotations[0].worm_id : null;
                 console.log('[loadCurrentFrame] Set currentWormId to:', state.currentWormId);
@@ -3798,7 +3800,28 @@
                     const totalPages = Math.ceil(tileState.wormData.length / tilesPerPage);
                     tileState.currentPage = Math.min(savedPage, Math.max(0, totalPages - 1));
                 } else {
-                    tileState.currentPage = 0;
+                    // Default to page containing current video/worm
+                    const tilesPerPage = tileState.gridSize * tileState.gridSize;
+                    let targetPage = 0;
+                    
+                    // For current_video source, find current worm
+                    if (tileState.source === 'current_video' && state.currentWormId !== null && state.currentVideoPath) {
+                        const wormIndex = worms.findIndex(w => 
+                            w.worm_id === state.currentWormId && w.video_path === state.currentVideoPath
+                        );
+                        if (wormIndex >= 0) {
+                            targetPage = Math.floor(wormIndex / tilesPerPage);
+                        }
+                    }
+                    // For folder/all sources, find current video's first worm
+                    else if (state.currentVideoPath) {
+                        const firstWormIndex = worms.findIndex(w => w.video_path === state.currentVideoPath);
+                        if (firstWormIndex >= 0) {
+                            targetPage = Math.floor(firstWormIndex / tilesPerPage);
+                        }
+                    }
+                    
+                    tileState.currentPage = targetPage;
                 }
                 
                 if (tileState.wormData.length === 0) {
@@ -3835,7 +3858,18 @@
                     const totalPages = Math.ceil(tileState.frameData.length / tilesPerPage);
                     tileState.currentPage = Math.min(savedPage, Math.max(0, totalPages - 1));
                 } else {
-                    tileState.currentPage = 0;
+                    // Default to page containing current video
+                    const tilesPerPage = tileState.gridSize * tileState.gridSize;
+                    let targetPage = 0;
+                    
+                    if (state.currentVideoPath) {
+                        const frameIndex = tileState.frameData.findIndex(f => f.video_path === state.currentVideoPath);
+                        if (frameIndex >= 0) {
+                            targetPage = Math.floor(frameIndex / tilesPerPage);
+                        }
+                    }
+                    
+                    tileState.currentPage = targetPage;
                 }
                 
                 if (tileState.frameData.length === 0) {
